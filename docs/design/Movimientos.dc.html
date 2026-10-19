@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Bolsillo · Movimientos</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&amp;family=Figtree:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#0F5E55;text-decoration:none}a:hover{color:#0B4740}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F4F6F3; color: #16201B; font-family: Figtree, system-ui, sans-serif; display: flex; flex-direction: column">
+
+  <div style="padding: 20px 20px 12px; display: flex; flex-direction: column; gap: 14px; background: #F4F6F3">
+    <div style="display: flex; align-items: center; justify-content: space-between">
+      <h1 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 26px">Movimientos</h1>
+      <button aria-label="Exportar CSV" style="height: 40px; padding: 0 14px; border-radius: 12px; border: 1px solid #DDE3DE; background: #FFFFFF; color: #16201B; font: inherit; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px; cursor: pointer">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"></path></svg>CSV</button>
+    </div>
+    <label style="display: flex; align-items: center; gap: 10px; height: 46px; padding: 0 14px; border-radius: 14px; background: #FFFFFF; border: 1px solid #DDE3DE; color: #55615B">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
+      <span style="position: absolute; width: 1px; height: 1px; overflow: hidden">Buscar movimientos</span>
+      <input type="search" placeholder="Buscar por nota…" style="border: 0; outline: 0; flex: 1; font: inherit; font-size: 15px; background: transparent; color: #16201B">
+    </label>
+    <div style="display: flex; gap: 8px; overflow-x: auto">
+      <sc-for list="{{filters}}" as="f" hint-placeholder-count="4">
+        <button onClick="{{f.pick}}" style="height: 36px; padding: 0 14px; border-radius: 999px; border: 1px solid {{f.border}}; background: {{f.bg}}; color: {{f.fg}}; font: inherit; font-size: 13px; font-weight: 600; white-space: nowrap; cursor: pointer">{{f.label}}</button>
+      </sc-for>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px">
+      <div style="background: #FFFFFF; border-radius: 14px; padding: 10px 12px; display: flex; flex-direction: column"><span style="font-size: 12px; color: #55615B">Ingresos oct</span><span style="font-weight: 700; color: #1D4ED8; font-variant-numeric: tabular-nums">+ $ 3.500.000</span></div>
+      <div style="background: #FFFFFF; border-radius: 14px; padding: 10px 12px; display: flex; flex-direction: column"><span style="font-size: 12px; color: #55615B">Gastos oct</span><span style="font-weight: 700; color: #B33A0A; font-variant-numeric: tabular-nums">− $ 2.104.800</span></div>
+    </div>
+  </div>
+
+  <div style="flex: 1; overflow-y: auto; padding: 4px 20px 20px; display: flex; flex-direction: column; gap: 14px">
+    <sc-for list="{{days}}" as="d" hint-placeholder-count="3">
+      <div style="display: flex; flex-direction: column; gap: 6px">
+        <div style="display: flex; justify-content: space-between; font-size: 13px; color: #55615B; padding: 0 4px"><span style="font-weight: 600">{{d.label}}</span><span style="font-variant-numeric: tabular-nums">{{d.total}}</span></div>
+        <div style="background: #FFFFFF; border-radius: 18px; padding: 4px 14px">
+          <sc-for list="{{d.items}}" as="t" hint-placeholder-count="2">
+            <div style="display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid {{t.sep}}">
+              <div style="width: 40px; height: 40px; border-radius: 12px; background: {{t.tint}}; color: {{t.ink}}; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px">{{t.initial}}</div>
+              <div style="flex: 1; display: flex; flex-direction: column; min-width: 0"><span style="font-weight: 600; font-size: 14px">{{t.note}}</span><span style="font-size: 12px; color: #55615B">{{t.meta}}</span></div>
+              <span style="font-weight: 700; font-size: 14px; color: {{t.color}}; font-variant-numeric: tabular-nums; white-space: nowrap">{{t.amount}}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+
+  <nav aria-label="Navegación principal" style="height: 84px; flex-shrink: 0; background: #FFFFFF; border-top: 1px solid #E2E7E3; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); align-items: center; padding: 0 8px 12px">
+    <a href="Main.dc.html" style="display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 11px; font-weight: 500; color: #55615B; min-height: 44px; justify-content: center">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"></path></svg>Inicio</a>
+    <a href="Movimientos.dc.html" aria-current="page" style="display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 11px; font-weight: 600; color: #0F5E55; min-height: 44px; justify-content: center">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"></path></svg>Movimientos</a>
+    <a href="Agregar.dc.html" aria-label="Agregar movimiento" style="justify-self: center; width: 56px; height: 56px; border-radius: 18px; background: #0F5E55; color: #FFFFFF; display: flex; align-items: center; justify-content: center; margin-top: -18px; box-shadow: 0 8px 20px rgba(15,94,85,0.35)">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></a>
+    <a href="Presupuestos.dc.html" style="display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 11px; font-weight: 500; color: #55615B; min-height: 44px; justify-content: center">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12A9 9 0 1 1 12 3v9z"></path><path d="M15 3.5A9 9 0 0 1 20.5 9H15z"></path></svg>Presupuestos</a>
+    <a href="Metas.dc.html" style="display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 11px; font-weight: 500; color: #55615B; min-height: 44px; justify-content: center">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><circle cx="12" cy="12" r="5"></circle><circle cx="12" cy="12" r="1"></circle></svg>Metas</a>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { filter: 'all' }; }
+  renderVals() {
+    const filter = this.state.filter;
+    const opts = [['all', 'Todos'], ['expense', 'Gastos'], ['income', 'Ingresos'], ['transfer', 'Transferencias'], ['month', 'Octubre ▾']];
+    const filters = opts.map(([id, label]) => {
+      const on = id === filter;
+      return { label, bg: on ? '#0F5E55' : '#FFFFFF', fg: on ? '#FFFFFF' : '#16201B', border: on ? '#0F5E55' : '#DDE3DE', pick: () => id !== 'month' && this.setState({ filter: id }) };
+    });
+    const style = {
+      expense: { tint: '#FDECE2', ink: '#9A3412', color: '#B33A0A', sign: '− ' },
+      income: { tint: '#E4ECFD', ink: '#1D4ED8', color: '#1D4ED8', sign: '+ ' },
+      transfer: { tint: '#ECEFEC', ink: '#3D4843', color: '#3D4843', sign: '' }
+    };
+    const raw = [
+      ['Hoy · sáb 18 oct', [['expense', 'Almuerzo', 'Comida · Nequi', '24.500'], ['expense', 'Spotify', 'Suscripciones · Tarjeta', '16.900'], ['transfer', 'Bancolombia → Ahorros', 'Transferencia', '300.000']]],
+      ['Mié 15 oct', [['income', 'Nómina octubre', 'Salario · Bancolombia', '3.500.000'], ['expense', 'Arriendo', 'Hogar · Bancolombia', '1.200.000']]],
+      ['Mar 14 oct', [['expense', 'Recarga Cívica', 'Transporte · Efectivo', '50.000'], ['expense', 'Mercado D1', 'Comida · Tarjeta', '138.400']]]
+    ];
+    const days = raw.map(([label, items]) => {
+      const visible = items.filter(i => filter === 'all' || i[0] === filter);
+      return {
+        label, total: visible.length + (visible.length === 1 ? ' movimiento' : ' movimientos'),
+        items: visible.map((i, idx) => ({ ...style[i[0]], note: i[1], meta: i[2], initial: i[1].charAt(0), amount: style[i[0]].sign + '$ ' + i[3], sep: idx === visible.length - 1 ? 'transparent' : '#EEF1EE' }))
+      };
+    }).filter(d => d.items.length);
+    return { filters, days };
+  }
+}
+</script>
+</body>
+</html>

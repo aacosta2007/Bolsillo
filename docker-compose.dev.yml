@@ -1,0 +1,6 @@
+# Desarrollo local: expone MariaDB en 127.0.0.1:5432 para correr backend y frontend fuera de Docker.
+# Uso: docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d db
+services:
+  db:
+    ports:
+      - "127.0.0.1:3306:3306"

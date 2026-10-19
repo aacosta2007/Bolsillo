@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Bolsillo · Agregar movimiento</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&amp;family=Figtree:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#0F5E55;text-decoration:none}a:hover{color:#0B4740}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #FFFFFF; color: #16201B; font-family: Figtree, system-ui, sans-serif; display: flex; flex-direction: column">
+
+  <div style="padding: 16px 20px 0; display: flex; align-items: center; justify-content: space-between">
+    <a href="Main.dc.html" aria-label="Cerrar" style="width: 44px; height: 44px; border-radius: 14px; background: #F4F6F3; color: #16201B; display: flex; align-items: center; justify-content: center">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></a>
+    <span style="font-weight: 700; font-size: 16px">Nuevo movimiento</span>
+    <span style="width: 44px"></span>
+  </div>
+
+  <div style="padding: 16px 20px 0">
+    <div role="group" aria-label="Tipo de movimiento" style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; padding: 4px; background: #F0F3F0; border-radius: 14px">
+      <sc-for list="{{types}}" as="t" hint-placeholder-count="3">
+        <button onClick="{{t.pick}}" aria-pressed="{{t.on}}" style="height: 40px; border: 0; border-radius: 10px; background: {{t.bg}}; color: {{t.fg}}; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; box-shadow: {{t.shadow}}">{{t.label}}</button>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="padding: 22px 20px 6px; display: flex; flex-direction: column; align-items: center; gap: 4px">
+    <span style="font-size: 13px; color: #55615B">Monto</span>
+    <span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 46px; letter-spacing: -1px; color: {{amountColor}}; font-variant-numeric: tabular-nums">{{amountText}}</span>
+  </div>
+
+  <div style="padding: 8px 20px 0; display: flex; flex-direction: column; gap: 10px">
+    <span style="font-size: 13px; font-weight: 600; color: #55615B">Categoría</span>
+    <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px">
+      <sc-for list="{{cats}}" as="c" hint-placeholder-count="8">
+        <button onClick="{{c.pick}}" aria-pressed="{{c.on}}" style="height: 64px; border-radius: 14px; border: 2px solid {{c.border}}; background: {{c.bg}}; color: #16201B; font: inherit; font-size: 12px; font-weight: 600; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; cursor: pointer">
+          <span style="width: 26px; height: 26px; border-radius: 8px; background: {{c.color}}; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-size: 12px">{{c.initial}}</span>{{c.name}}</button>
+      </sc-for>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px">
+      <label style="display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 600; color: #55615B">Cuenta
+        <select style="height: 44px; border-radius: 12px; border: 1px solid #DDE3DE; padding: 0 10px; font: inherit; font-size: 14px; color: #16201B; background: #FFFFFF">
+          <option>Nequi</option><option>Bancolombia</option><option>Efectivo</option><option>Tarjeta Visa</option>
+        </select></label>
+      <label style="display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 600; color: #55615B">Fecha
+        <input type="date" value="2026-10-18" style="height: 44px; box-sizing: border-box; border-radius: 12px; border: 1px solid #DDE3DE; padding: 0 10px; font: inherit; font-size: 14px; color: #16201B"></label>
+    </div>
+    <label style="display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 600; color: #55615B">Nota
+      <input type="text" placeholder="Ej. almuerzo con el equipo" style="height: 44px; box-sizing: border-box; border-radius: 12px; border: 1px solid #DDE3DE; padding: 0 12px; font: inherit; font-size: 14px; color: #16201B"></label>
+  </div>
+
+  <div style="flex: 1"></div>
+
+  <div style="padding: 0 20px 6px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px">
+    <sc-for list="{{keys}}" as="k" hint-placeholder-count="12">
+      <button onClick="{{k.press}}" aria-label="{{k.aria}}" style="height: 48px; border: 0; border-radius: 12px; background: #F4F6F3; color: #16201B; font: inherit; font-size: 20px; font-weight: 600; cursor: pointer">{{k.label}}</button>
+    </sc-for>
+  </div>
+  <div style="padding: 6px 20px 24px">
+    <a href="Movimientos.dc.html" style="height: 54px; border-radius: 16px; background: #0F5E55; color: #FFFFFF; font-size: 16px; font-weight: 700; display: flex; align-items: center; justify-content: center">Guardar movimiento</a>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { type: 'expense', amount: '24500', cat: 'Comida' }; }
+  renderVals() {
+    const { type, amount, cat } = this.state;
+    const types = [['expense', 'Gasto'], ['income', 'Ingreso'], ['transfer', 'Transferir']].map(([id, label]) => {
+      const on = id === type;
+      return { label, on: on ? 'true' : 'false', bg: on ? '#FFFFFF' : 'transparent', fg: on ? '#16201B' : '#55615B', shadow: on ? '0 1px 3px rgba(22,32,27,0.15)' : 'none', pick: () => this.setState({ type: id }) };
+    });
+    const expenseCats = [['Comida', '#0F5E55'], ['Transporte', '#2563EB'], ['Hogar', '#C2410C'], ['Servicios', '#B7791F'], ['Salud', '#BE185D'], ['Ocio', '#6D28D9'], ['Compras', '#0E7490'], ['Otros', '#55615B']];
+    const incomeCats = [['Salario', '#1D4ED8'], ['Freelance', '#0F5E55'], ['Inversión', '#6D28D9'], ['Regalos', '#BE185D']];
+    const list = type === 'income' ? incomeCats : type === 'transfer' ? [] : expenseCats;
+    const cats = list.map(([name, color]) => {
+      const on = name === cat;
+      return { name, color, initial: name.charAt(0), on: on ? 'true' : 'false', border: on ? '#0F5E55' : '#EEF1EE', bg: on ? '#E3F0ED' : '#FFFFFF', pick: () => this.setState({ cat: name }) };
+    });
+    const fmt = (s) => s ? Number(s).toLocaleString('es-CO') : '0';
+    const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '000', '0', '⌫'].map((k) => ({
+      label: k, aria: k === '⌫' ? 'Borrar' : k,
+      press: () => {
+        const a = this.state.amount;
+        const next = k === '⌫' ? a.slice(0, -1) : (a + k).replace(/^0+/, '').slice(0, 12);
+        this.setState({ amount: next });
+      }
+    }));
+    const sign = type === 'expense' ? '− ' : type === 'income' ? '+ ' : '';
+    const amountColor = type === 'expense' ? '#B33A0A' : type === 'income' ? '#1D4ED8' : '#16201B';
+    return { types, cats, keys, amountText: sign + '$ ' + fmt(amount), amountColor };
+  }
+}
+</script>
+</body>
+</html>
