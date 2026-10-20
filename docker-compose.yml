@@ -50,8 +50,10 @@ services:
     ports:
       - "${BIND_IP:-127.0.0.1}:${WEB_PORT:-8080}:80"
 
+  # Opcional: apagado por defecto. Activar con `docker compose --profile backup up -d`
   backup:
     image: mariadb:11.4
+    profiles: ["backup"]
     restart: unless-stopped
     depends_on:
       db:

@@ -42,9 +42,10 @@ O todo en Docker: `docker compose up -d --build` → http://localhost:8080
 Alternativa sin `tailscale serve`: pon `BIND_IP=<tailscale ip -4>` y `COOKIE_SECURE=false`, y entra por `http://100.x.y.z:8080`
 (funciona, pero sin instalación PWA ni cookie segura).
 
-## Backups
+## Backups (opcional)
 
-El servicio `backup` genera `bolsillo_YYYYMMDD_HHMMSS.sql.gz` en `BACKUP_DIR` (por defecto `./backups`; en el servidor `/data/bolsillo/backups`) al arrancar y cada día a las 03:00, y borra los
+El servicio `backup` está **apagado por defecto**. Para activarlo: `docker compose --profile backup up -d`.
+Genera `bolsillo_YYYYMMDD_HHMMSS.sql.gz` en `BACKUP_DIR` (por defecto `./backups`; en el servidor `/data/bolsillo/backups`) al arrancar y cada día a las 03:00, y borra los
 de más de `BACKUP_KEEP_DAYS` días. Restaurar:
 
 ```bash
