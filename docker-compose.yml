@@ -64,7 +64,7 @@ services:
       BACKUP_KEEP_DAYS: ${BACKUP_KEEP_DAYS:-14}
       TZ: ${DEFAULT_TIMEZONE:-America/Bogota}
     volumes:
-      - ./backups:/backups
+      - ${BACKUP_DIR:-./backups}:/backups
       - ./scripts/backup.sh:/backup.sh:ro
     entrypoint: ["/bin/sh", "/backup.sh"]
 

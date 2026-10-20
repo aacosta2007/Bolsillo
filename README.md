@@ -44,11 +44,11 @@ Alternativa sin `tailscale serve`: pon `BIND_IP=<tailscale ip -4>` y `COOKIE_SEC
 
 ## Backups
 
-El servicio `backup` genera `backups/bolsillo_YYYYMMDD_HHMMSS.sql.gz` al arrancar y cada día a las 03:00, y borra los
+El servicio `backup` genera `bolsillo_YYYYMMDD_HHMMSS.sql.gz` en `BACKUP_DIR` (por defecto `./backups`; en el servidor `/data/bolsillo/backups`) al arrancar y cada día a las 03:00, y borra los
 de más de `BACKUP_KEEP_DAYS` días. Restaurar:
 
 ```bash
-gunzip -c backups/bolsillo_XXXX.sql.gz | docker compose exec -T db sh -c 'mariadb -u"$MARIADB_USER" -p"$MARIADB_PASSWORD" "$MARIADB_DATABASE"'
+gunzip -c /data/bolsillo/backups/bolsillo_XXXX.sql.gz | docker compose exec -T db sh -c 'mariadb -u"$MARIADB_USER" -p"$MARIADB_PASSWORD" "$MARIADB_DATABASE"'
 ```
 
 ## Usuario
