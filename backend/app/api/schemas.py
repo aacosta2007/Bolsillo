@@ -7,7 +7,16 @@ from decimal import Decimal
 from typing import Annotated, ClassVar, Generic, TypeVar
 from uuid import UUID
 
-from pydantic import BaseModel, BeforeValidator, ConfigDict, EmailStr, Field, PlainSerializer, field_validator
+from pydantic import (
+    BaseModel,
+    BeforeValidator,
+    ConfigDict,
+    EmailStr,
+    Field,
+    PlainSerializer,
+    computed_field,
+    field_validator,
+)
 
 from app.domain.enums import (
     AccountType,
@@ -15,7 +24,10 @@ from app.domain.enums import (
     CategoryKind,
     Frequency,
     TransactionType,
+    WeekendAdjust,
 )
+from app.domain.exceptions import BusinessRuleError
+from app.domain.rules import monthly_equivalent, normalize_days_of_month
 
 
 def _fmt(v: Decimal) -> str:
@@ -250,10 +262,28 @@ class RecurringOut(ORM):
     note: str | None
     frequency: Frequency
     interval: int
+    days_of_month: str | None
+    weekend_adjust: WeekendAdjust
+    is_paycheck: bool
     start_date: Date
     end_date: Date | None
     next_run_date: Date
     active: bool
+
+    @computed_field  # solo lectura
+    @property
+    def monthly_equivalent(self) -> Money:
+        return monthly_equivalent(self.amount, self.frequency, self.interval, self.days_of_month)
+
+
+def _check_days_of_month(v: str | None) -> str | None:
+    """Formato de days_of_month (422 si es inválido); devuelve la forma normalizada."""
+    if v is None:
+        return None
+    try:
+        return normalize_days_of_month(v)
+    except BusinessRuleError as e:
+        raise ValueError(e.message) from None
 
 
 class RecurringCreate(BaseModel):
@@ -264,13 +294,18 @@ class RecurringCreate(BaseModel):
     note: Note | None = None
     frequency: Frequency
     interval: int = Field(default=1, ge=1, le=365)
+    days_of_month: str | None = Field(default=None, max_length=20)
+    weekend_adjust: WeekendAdjust = WeekendAdjust.NONE
+    is_paycheck: bool = False
     start_date: Date
     end_date: Date | None = None
     active: bool = True
 
+    _days = field_validator("days_of_month")(_check_days_of_month)
+
 
 class RecurringUpdate(UpdateBase):
-    NULLABLE = {"end_date", "note"}
+    NULLABLE = {"end_date", "note", "days_of_month"}
     type: TransactionType | None = None
     amount: MoneyIn | None = None
     account_id: UUID | None = None
@@ -278,9 +313,14 @@ class RecurringUpdate(UpdateBase):
     note: Note | None = None
     frequency: Frequency | None = None
     interval: int | None = Field(default=None, ge=1, le=365)
+    days_of_month: str | None = Field(default=None, max_length=20)
+    weekend_adjust: WeekendAdjust | None = None
+    is_paycheck: bool | None = None
     start_date: Date | None = None
     end_date: Date | None = None
     active: bool | None = None
+
+    _days = field_validator("days_of_month")(_check_days_of_month)
 
 
 class RunResult(BaseModel):
@@ -295,6 +335,7 @@ class UpcomingOut(ORM):
     category_id: UUID
     account_id: UUID
     note: str | None
+    is_paycheck: bool
 
 
 # ---------- Metas ----------

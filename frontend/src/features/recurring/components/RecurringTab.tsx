@@ -1,38 +1,17 @@
 import { useMemo, useState } from 'react';
 import { Play, Repeat } from 'lucide-react';
-import { FREQ_LABEL, shortDate } from '@/shared/lib/dates';
-import { formatMoney, fromCents, toCents } from '@/shared/lib/money';
-import { Button, EmptyState, ErrorState, ListSkeleton, Money, cn, errorMessage } from '@/shared/ui';
+import { shortDate } from '@/shared/lib/dates';
+import { formatMoney, sumMoney } from '@/shared/lib/money';
+import { Button, EmptyState, ErrorState, ListSkeleton, Money, StatusChip, cn, errorMessage } from '@/shared/ui';
 import { useAccounts } from '../../accounts/hooks';
 import { useCategories } from '../../categories/hooks';
 import { useRecurring, useRunRecurring, useUpcoming } from '../hooks';
+import { describeFrequency } from '../schedule';
 import type { RecurringRule } from '../types';
 import { RecurringFormSheet } from './RecurringFormSheet';
 
-/** Equivalente mensual aproximado (centavos) de una regla de gasto. */
-export function monthlyCents(r: Pick<RecurringRule, 'amount' | 'frequency' | 'interval'>): bigint {
-  const c = toCents(r.amount);
-  const n = BigInt(Math.max(1, r.interval));
-  switch (r.frequency) {
-    case 'daily':
-      return (c * 365n) / (12n * n);
-    case 'weekly':
-      return (c * 52n) / (12n * n);
-    case 'monthly':
-      return c / n;
-    case 'yearly':
-      return c / (12n * n);
-  }
-}
-
 function ruleMeta(r: RecurringRule, accName?: string): string {
-  const unit = { daily: 'día', weekly: 'semana', monthly: 'mes', yearly: 'año' }[r.frequency];
-  const base =
-    r.interval > 1
-      ? `Cada ${r.interval} ${r.frequency === 'monthly' ? 'meses' : r.frequency === 'daily' ? 'días' : r.frequency === 'weekly' ? 'semanas' : 'años'}`
-      : (FREQ_LABEL[r.frequency] ?? unit);
-  const day = r.frequency === 'monthly' || r.frequency === 'yearly' ? `día ${Number(r.start_date.slice(8, 10))}` : null;
-  return [base, day, accName, !r.active ? 'Pausado' : null].filter(Boolean).join(' · ');
+  return [describeFrequency(r), accName, !r.active ? 'Pausado' : null].filter(Boolean).join(' · ');
 }
 
 export function RecurringTab() {
@@ -48,7 +27,7 @@ export function RecurringTab() {
   const catMap = useMemo(() => new Map((categories.data ?? []).map((c) => [c.id, c.name])), [categories.data]);
 
   const fixed = useMemo(
-    () => fromCents((rules.data ?? []).filter((r) => r.active && r.type === 'expense').reduce((acc, r) => acc + monthlyCents(r), 0n)),
+    () => sumMoney((rules.data ?? []).filter((r) => r.active && r.type === 'expense').map((r) => r.monthly_equivalent)),
     [rules.data],
   );
   const next = upcoming.data?.[0];
@@ -99,7 +78,10 @@ export function RecurringTab() {
                   <Repeat size={18} />
                 </span>
                 <span className="flex min-w-0 flex-1 flex-col">
-                  <span className="truncate text-sm font-semibold">{r.note || catMap.get(r.category_id) || 'Recurrente'}</span>
+                  <span className="flex items-center gap-2">
+                    <span className="truncate text-sm font-semibold">{r.note || catMap.get(r.category_id) || 'Recurrente'}</span>
+                    {r.is_paycheck && <StatusChip tone="ok">Sueldo</StatusChip>}
+                  </span>
                   <span className="truncate text-xs text-muted">{ruleMeta(r, accMap.get(r.account_id))}</span>
                 </span>
                 <Money value={r.amount} type={r.type} className="text-sm font-bold" />
@@ -138,6 +120,12 @@ export function RecurringTab() {
                 <span className="min-w-0 truncate">
                   <span className="font-semibold">{u.note || catMap.get(u.category_id) || 'Recurrente'}</span>
                   <span className="text-muted"> · {shortDate(u.date)}</span>
+                  {u.is_paycheck && (
+                    <>
+                      {' '}
+                      <StatusChip tone="ok">Sueldo</StatusChip>
+                    </>
+                  )}
                 </span>
                 <Money value={u.amount} type={u.type} className="font-bold" />
               </li>

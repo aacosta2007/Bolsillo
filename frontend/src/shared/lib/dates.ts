@@ -76,6 +76,12 @@ export function dayLabel(iso: string, today: string): string {
   return base.charAt(0).toUpperCase() + base.slice(1);
 }
 
+/** "jue 15 oct" (minúsculas, sin prefijo). */
+export function weekdayDate(iso: string): string {
+  const { y, m, d } = parseISO(iso);
+  return `${DOW_SHORT[new Date(Date.UTC(y, m - 1, d)).getUTCDay()]} ${d} ${MONTHS_SHORT[m - 1]}`;
+}
+
 export function addDays(iso: string, n: number): string {
   const { y, m, d } = parseISO(iso);
   const dt = new Date(Date.UTC(y, m - 1, d + n));

@@ -9,7 +9,7 @@ from uuid import UUID
 from dateutil.relativedelta import relativedelta
 
 from app.domain.entities import Account, Category
-from app.domain.enums import BudgetState, CategoryKind, Frequency, TransactionType
+from app.domain.enums import BudgetState, CategoryKind, Frequency, TransactionType, WeekendAdjust
 from app.domain.exceptions import BusinessRuleError
 
 CENT = Decimal("0.01")
@@ -115,6 +115,94 @@ def next_after(start: date, frequency: Frequency, interval: int, current: date) 
     while occurrence(start, frequency, interval, n) <= current:
         n += 1
     return occurrence(start, frequency, interval, n)
+
+
+# ---- Días del mes (monthly_days) ----
+LAST = 32  # centinela interno de «L» (último día del mes); ordena después de 1..31
+MAX_DAYS_OF_MONTH = 3
+
+
+def parse_days_of_month(raw: str | None) -> tuple[int, ...]:
+    """Valida y normaliza "15,L": 1 a 3 valores (1-31 o L), sin repetir, ascendentes y L al final."""
+    if raw is None or not str(raw).strip():
+        raise BusinessRuleError("days_of_month es obligatorio con la frecuencia monthly_days")
+    days: list[int] = []
+    for part in str(raw).split(","):
+        part = part.strip().upper()
+        if part == "L":
+            days.append(LAST)
+        elif part.isascii() and part.isdigit() and 1 <= int(part) <= 31:
+            days.append(int(part))
+        else:
+            raise BusinessRuleError(f"Día del mes inválido: «{part}» (use 1-31 o L)")
+    if len(days) > MAX_DAYS_OF_MONTH:
+        raise BusinessRuleError("days_of_month admite como máximo 3 valores")
+    if len(set(days)) != len(days):
+        raise BusinessRuleError("days_of_month no admite valores repetidos")
+    return tuple(sorted(days))
+
+
+def normalize_days_of_month(raw: str | None) -> str:
+    return ",".join("L" if d == LAST else str(d) for d in parse_days_of_month(raw))
+
+
+def month_occurrences(year: int, month: int, days: tuple[int, ...]) -> list[date]:
+    """Fechas nominales del mes: el día inexistente se recorta al último (30 -> 28 en feb) y las
+    fechas que coinciden se generan una sola vez ("30,L" en febrero)."""
+    last = calendar.monthrange(year, month)[1]
+    return sorted({date(year, month, last if d == LAST else min(d, last)) for d in days})
+
+
+def effective_date(nominal: date, weekend_adjust: WeekendAdjust | str) -> date:
+    """Fecha real del movimiento: con previous_business_day, sábado/domingo -> viernes anterior."""
+    if WeekendAdjust(weekend_adjust) == WeekendAdjust.PREVIOUS_BUSINESS_DAY:
+        wd = nominal.weekday()  # 5 = sábado, 6 = domingo
+        if wd >= 5:
+            return nominal - timedelta(days=wd - 4)
+    return nominal
+
+
+def first_nominal_on_or_after(
+    start: date, frequency: Frequency, interval: int, days_of_month: str | None, d: date
+) -> date:
+    """Primera ocurrencia nominal >= `d` (y >= start). Para las frecuencias clásicas con
+    d <= start es el propio start."""
+    d = max(d, start)
+    if Frequency(frequency) != Frequency.MONTHLY_DAYS:
+        return d if d == start else next_after(start, frequency, interval, d - timedelta(days=1))
+    days = parse_days_of_month(days_of_month)
+    year, month = d.year, d.month
+    while True:
+        for occ in month_occurrences(year, month, days):
+            if occ >= d:
+                return occ
+        year, month = (year + 1, 1) if month == 12 else (year, month + 1)
+
+
+def next_nominal_after(
+    start: date, frequency: Frequency, interval: int, days_of_month: str | None, current: date
+) -> date:
+    """Primera ocurrencia nominal estrictamente posterior a `current`, para todas las frecuencias."""
+    return first_nominal_on_or_after(start, frequency, interval, days_of_month, current + timedelta(days=1))
+
+
+def monthly_equivalent(
+    amount: Decimal, frequency: Frequency, interval: int, days_of_month: str | None
+) -> Decimal:
+    """Equivalente mensual aproximado del monto de una regla (para «≈ $ X al mes»)."""
+    interval = max(1, interval)
+    f = Frequency(frequency)
+    if f == Frequency.MONTHLY_DAYS:
+        value = amount * len(parse_days_of_month(days_of_month))
+    elif f == Frequency.MONTHLY:
+        value = amount / interval
+    elif f == Frequency.WEEKLY:
+        value = amount * 52 / 12 / interval
+    elif f == Frequency.DAILY:
+        value = amount * 365 / 12 / interval
+    else:
+        value = amount / 12 / interval
+    return q2(value)
 
 
 # ---------- Metas ----------

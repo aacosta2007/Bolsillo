@@ -201,3 +201,52 @@ async def test_goal_contributions_cannot_go_negative(env):
         await svc.delete_contribution(user.id, g.id, big.id)  # dejaría -100
     await svc.add_contribution(user.id, g.id, {"amount": D("700")})
     assert (await svc.get(user.id, g.id)).completed is True
+
+
+# ---- recurrentes por días del mes ----
+async def test_quincenal_paycheck_run_idempotent_and_weekend_adjust(env):
+    uow, user, acc, _, _, income = env
+    svc = RecurringService(uow)
+    rule = await make_rule(uow, user, acc, income, type="income", amount=D("1000000"), frequency="monthly_days",
+                           days_of_month="L,15", interval=5, start_date=date(2026, 9, 1), is_paycheck=True,
+                           weekend_adjust="previous_business_day")
+    assert (rule.days_of_month, rule.interval, rule.next_run_date) == ("15,L", 1, date(2026, 9, 15))
+    # 15/9, 30/9, 15/10, 31/10 (sáb -> vie 30/10), 15/11 (dom -> vie 13/11)
+    assert await svc.run(user.id, date(2026, 11, 14)) == 5
+    assert sorted(t.date for t in uow.transactions.all()) == [
+        date(2026, 9, 15), date(2026, 9, 30), date(2026, 10, 15), date(2026, 10, 30), date(2026, 11, 13)]
+    assert (await uow.recurring.get(user.id, rule.id)).next_run_date == date(2026, 11, 30)
+    assert await svc.run(user.id, date(2026, 11, 14)) == 0
+    up = await svc.upcoming(user.id, 40, date(2026, 11, 14))
+    assert [(i.date, i.is_paycheck) for i in up] == [(date(2026, 11, 30), True), (date(2026, 12, 15), True)]
+
+
+async def test_weekend_adjust_runs_on_effective_date_not_nominal(env):
+    uow, user, acc, _, _, income = env
+    svc = RecurringService(uow)
+    await make_rule(uow, user, acc, income, type="income", frequency="monthly_days", days_of_month="15",
+                    start_date=date(2026, 11, 1), weekend_adjust="previous_business_day")
+    assert await svc.run(user.id, date(2026, 11, 12)) == 0
+    assert await svc.run(user.id, date(2026, 11, 13)) == 1  # nominal domingo 15, vence el viernes 13
+
+
+async def test_monthly_days_validation(env):
+    uow, user, acc, _, expense, income = env
+    with pytest.raises(BusinessRuleError):
+        await make_rule(uow, user, acc, expense, frequency="monthly_days")  # falta days_of_month
+    with pytest.raises(BusinessRuleError):
+        await make_rule(uow, user, acc, expense, days_of_month="15")  # con frecuencia monthly
+    with pytest.raises(BusinessRuleError):
+        await make_rule(uow, user, acc, expense, frequency="monthly_days", days_of_month="32")
+    with pytest.raises(BusinessRuleError):
+        await make_rule(uow, user, acc, expense, is_paycheck=True)  # sueldo solo en ingresos
+
+
+async def test_update_recomputes_next_run_for_monthly_days(env):
+    uow, user, acc, _, _, income = env
+    svc = RecurringService(uow)
+    rule = await make_rule(uow, user, acc, income, type="income", start_date=date(2026, 1, 1))
+    r = await svc.update(user.id, rule.id, {"frequency": "monthly_days", "days_of_month": "15,L"}, today=date(2026, 10, 16))
+    assert r.next_run_date == date(2026, 10, 31) and r.interval == 1
+    r = await svc.update(user.id, rule.id, {"frequency": "weekly"}, today=date(2026, 10, 16))
+    assert r.days_of_month is None  # al salir de monthly_days se limpian los días

@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Reporte PDF · Página 2</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&amp;family=Figtree:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#0F5E55}a:hover{color:#0B4740}
+</style>
+</helmet>
+<div style="width: 794px; height: 1123px; box-sizing: border-box; background: #FFFFFF; color: #16201B; font-family: Figtree, system-ui, sans-serif; display: flex; flex-direction: column">
+
+  <div style="padding: 36px 56px 0; display: flex; justify-content: space-between; align-items: baseline; border-bottom: 3px solid #0F5E55; margin: 0 56px; padding-left: 0; padding-right: 0; padding-bottom: 12px">
+    <span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 24px">Gastos e ingresos</span>
+    <span style="font-size: 12px; color: #55615B">Octubre 2026</span>
+  </div>
+
+  <div style="flex: 1; padding: 24px 56px; display: flex; flex-direction: column; gap: 26px">
+
+    <div style="display: flex; flex-direction: column; gap: 10px">
+      <span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 17px">Gastos por categoría</span>
+      <div style="display: grid; grid-template-columns: 180px minmax(0, 1fr); gap: 28px; align-items: center">
+        <svg width="180" height="180" viewBox="0 0 100 100" role="img" aria-label="Distribución de gastos por categoría" style="transform: rotate(-90deg)">
+          <circle cx="50" cy="50" r="38" fill="none" stroke="#C2410C" stroke-width="18" stroke-dasharray="99.3 139.5"></circle>
+          <circle cx="50" cy="50" r="38" fill="none" stroke="#0F5E55" stroke-width="18" stroke-dasharray="64.2 174.6" stroke-dashoffset="-99.3"></circle>
+          <circle cx="50" cy="50" r="38" fill="none" stroke="#B7791F" stroke-width="18" stroke-dasharray="25.8 213" stroke-dashoffset="-163.5"></circle>
+          <circle cx="50" cy="50" r="38" fill="none" stroke="#2563EB" stroke-width="18" stroke-dasharray="22.7 216.1" stroke-dashoffset="-189.3"></circle>
+          <circle cx="50" cy="50" r="38" fill="none" stroke="#6D28D9" stroke-width="18" stroke-dasharray="17 221.8" stroke-dashoffset="-212"></circle>
+          <circle cx="50" cy="50" r="38" fill="none" stroke="#93A39B" stroke-width="18" stroke-dasharray="9.8 229" stroke-dashoffset="-229"></circle>
+        </svg>
+        <table style="width: 100%; border-collapse: collapse; font-size: 13px">
+          <thead><tr style="color: #55615B; font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px"><th style="text-align: left; padding: 0 0 8px; font-weight: 600">Categoría</th><th style="text-align: right; padding: 0 0 8px; font-weight: 600">Octubre</th><th style="text-align: right; padding: 0 0 8px; font-weight: 600">Septiembre</th><th style="text-align: right; padding: 0 0 8px; font-weight: 600">Cambio</th></tr></thead>
+          <tbody>
+            <sc-for list="{{cats}}" as="c" hint-placeholder-count="6">
+              <tr style="border-top: 1px solid #EEF1EE">
+                <td style="padding: 8px 0"><span style="display: inline-block; width: 9px; height: 9px; border-radius: 2px; background: {{c.color}}; margin-right: 8px"></span>{{c.name}}</td>
+                <td style="padding: 8px 0; text-align: right; font-weight: 700; font-variant-numeric: tabular-nums">{{c.oct}}</td>
+                <td style="padding: 8px 0; text-align: right; color: #55615B; font-variant-numeric: tabular-nums">{{c.sep}}</td>
+                <td style="padding: 8px 0; text-align: right; font-weight: 700; color: {{c.deltaColor}}">{{c.delta}}</td>
+              </tr>
+            </sc-for>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px">
+      <div style="display: flex; flex-direction: column; gap: 10px">
+        <span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 17px">Los 5 gastos más grandes</span>
+        <sc-for list="{{top}}" as="t" hint-placeholder-count="5">
+          <div style="display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid #EEF1EE; font-size: 13px">
+            <span style="width: 22px; height: 22px; border-radius: 6px; background: #F4F6F3; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 11px">{{t.rank}}</span>
+            <span style="flex: 1; display: flex; flex-direction: column"><span style="font-weight: 600">{{t.note}}</span><span style="font-size: 11px; color: #55615B">{{t.meta}}</span></span>
+            <span style="font-weight: 700; color: #B33A0A; font-variant-numeric: tabular-nums">{{t.amount}}</span>
+          </div>
+        </sc-for>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 10px">
+        <span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 17px">Ingresos por fuente</span>
+        <div style="display: flex; flex-direction: column; gap: 12px; padding: 14px; border-radius: 14px; background: #F4F6F3">
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <div style="display: flex; justify-content: space-between; font-size: 13px"><span style="font-weight: 600">Salario · 2 quincenas</span><span style="font-weight: 700; font-variant-numeric: tabular-nums">$ 2.000.000</span></div>
+            <div style="height: 10px; border-radius: 999px; background: #FFFFFF"><div style="width: 85%; height: 100%; border-radius: 999px; background: #1D4ED8"></div></div>
+            <span style="font-size: 11px; color: #55615B">Igual que septiembre</span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <div style="display: flex; justify-content: space-between; font-size: 13px"><span style="font-weight: 600">Freelance</span><span style="font-weight: 700; font-variant-numeric: tabular-nums">$ 350.000</span></div>
+            <div style="height: 10px; border-radius: 999px; background: #FFFFFF"><div style="width: 15%; height: 100%; border-radius: 999px; background: #60A5FA"></div></div>
+            <span style="font-size: 11px; font-weight: 700; color: #1D4ED8">▲ Nuevo este mes</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 10px">
+      <div style="display: flex; justify-content: space-between; align-items: baseline">
+        <span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 17px">Gasto día a día</span>
+        <span style="font-size: 12px; color: #55615B">Las barras marcadas son días de pago de quincena</span>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(31, minmax(0, 1fr)); gap: 3px; align-items: end; height: 140px; border-bottom: 1px solid #E2E7E3">
+        <sc-for list="{{days}}" as="d" hint-placeholder-count="31">
+          <div style="height: {{d.h}}; background: {{d.color}}; border-radius: 3px 3px 0 0"></div>
+        </sc-for>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(31, minmax(0, 1fr)); gap: 3px; font-size: 9px; color: #7A857F; text-align: center">
+        <sc-for list="{{days}}" as="d" hint-placeholder-count="31"><span>{{d.label}}</span></sc-for>
+      </div>
+      <div style="display: flex; gap: 20px; font-size: 12px; color: #3D4843">
+        <span>Día de más gasto: <strong>5 oct · $ 715.000</strong> (arriendo)</span>
+        <span>Promedio diario sin arriendo: <strong>$ 31.700</strong></span>
+        <span>Días sin gastos: <strong>4</strong></span>
+      </div>
+    </div>
+  </div>
+
+  <div style="padding: 0 56px 28px; display: flex; justify-content: space-between; font-size: 11px; color: #7A857F">
+    <span>Bolsillo · Reporte de octubre 2026</span><span>Página 2 de 3</span>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":794,"height":1123}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const f = (n) => '$ ' + n.toLocaleString('es-CO');
+    const cats = [
+      ['Hogar/Arriendo', '#C2410C', 700000, 700000], ['Comida', '#0F5E55', 452300, 383300], ['Servicios', '#B7791F', 182000, 195000],
+      ['Transporte', '#2563EB', 160000, 160000], ['Entretenimiento', '#6D28D9', 120000, 96000], ['Otros', '#93A39B', 70000, 55700]
+    ].map(([name, color, o, s]) => {
+      const d = Math.round((o - s) / s * 100);
+      return { name, color, oct: f(o), sep: f(s), delta: d === 0 ? '= 0 %' : (d > 0 ? '▲ ' : '▼ ') + Math.abs(d) + ' %', deltaColor: d > 0 ? '#B33A0A' : d < 0 ? '#0F5E55' : '#55615B' };
+    });
+    const top = [
+      ['Arriendo', 'Hogar · 5 oct', 700000], ['Plan celular', 'Servicios · 28 oct', 170000], ['Mercado D1', 'Comida · 12 oct', 138400],
+      ['Concierto', 'Entretenimiento · 24 oct', 95000], ['Recarga Cívica', 'Transporte · 15 oct', 80000]
+    ].map(([note, meta, a], i) => ({ rank: i + 1, note, meta, amount: f(a) }));
+    const vals = [12, 35, 0, 22, 715, 15, 40, 18, 9, 55, 0, 138, 20, 30, 92, 25, 14, 60, 0, 47, 10, 33, 18, 95, 12, 28, 0, 170, 22, 96, 9];
+    const pay = { 15: true, 30: true };
+    const days = vals.map((v, i) => ({
+      label: (i + 1) % 5 === 0 || i === 0 ? String(i + 1) : '',
+      h: Math.max(2, Math.round(Math.min(v, 200) / 200 * 136)) + 'px',
+      color: pay[i + 1] ? '#1D4ED8' : v > 150 ? '#C2410C' : '#0F5E55'
+    }));
+    return { cats, top, days };
+  }
+}
+</script>
+</body>
+</html>

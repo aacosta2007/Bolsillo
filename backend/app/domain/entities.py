@@ -11,6 +11,7 @@ from app.domain.enums import (
     CategoryKind,
     Frequency,
     TransactionType,
+    WeekendAdjust,
 )
 
 ZERO = Decimal("0.00")
@@ -134,6 +135,9 @@ class RecurringRule:
     note: str | None = None
     interval: int = 1
     end_date: date | None = None
+    days_of_month: str | None = None  # solo monthly_days; normalizado, p. ej. "15,L"
+    weekend_adjust: WeekendAdjust = WeekendAdjust.NONE
+    is_paycheck: bool = False
     active: bool = True
     id: UUID = field(default_factory=uuid4)
     created_at: datetime = field(default_factory=utcnow)
@@ -142,6 +146,7 @@ class RecurringRule:
     def __post_init__(self) -> None:
         self.type = TransactionType(self.type)
         self.frequency = Frequency(self.frequency)
+        self.weekend_adjust = WeekendAdjust(self.weekend_adjust)
 
 
 @dataclass(kw_only=True)
@@ -153,6 +158,7 @@ class UpcomingItem:
     category_id: UUID
     account_id: UUID
     note: str | None
+    is_paycheck: bool = False
 
 
 @dataclass(kw_only=True)

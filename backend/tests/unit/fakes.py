@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from copy import copy
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal
 from uuid import UUID
 
@@ -118,7 +118,7 @@ class FakeRecurring(_Repo):
         return self._all(user_id)
 
     async def lock_due(self, user_id, today):
-        return [r for r in self._all(user_id) if r.active and r.next_run_date <= today]
+        return [r for r in self._all(user_id) if r.active and r.next_run_date <= today + timedelta(days=2)]
 
 
 class FakeGoals(_Repo):

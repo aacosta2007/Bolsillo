@@ -101,12 +101,23 @@ Solo categorías de gasto. Único por (usuario, categoría, mes) → `409`. `sta
 ```json
 RecurringRule = {
   "id": "uuid", "type": "income|expense", "amount": "39900.00", "account_id": "uuid", "category_id": "uuid",
-  "note": "Netflix", "frequency": "daily|weekly|monthly|yearly", "interval": 1,
-  "start_date": "2026-01-05", "end_date": null, "next_run_date": "2026-11-05", "active": true
+  "note": "Netflix", "frequency": "daily|weekly|monthly|yearly|monthly_days", "interval": 1,
+  "days_of_month": null, "weekend_adjust": "none", "is_paycheck": false,
+  "start_date": "2026-01-05", "end_date": null, "next_run_date": "2026-11-05", "active": true,
+  "monthly_equivalent": "39900.00"
 }
-UpcomingItem = {"rule_id": "uuid", "date": "2026-11-05", "type": "expense", "amount": "39900.00", "category_id": "uuid", "account_id": "uuid", "note": "Netflix"}
+UpcomingItem = {"rule_id": "uuid", "date": "2026-11-05", "type": "expense", "amount": "39900.00", "category_id": "uuid", "account_id": "uuid", "note": "Netflix", "is_paycheck": false}
 ```
-Al crear, `next_run_date = start_date`. El job diario (00:05 hora del usuario, y también al arrancar) crea un movimiento por cada ocurrencia con `date <= hoy`, enlazado con `recurring_id`, y avanza `next_run_date` en la misma transacción de BD. Mensual en día 31 → último día del mes.
+Al crear, `next_run_date` = primera ocurrencia ≥ `start_date` (para las frecuencias clásicas es `start_date`). El job diario (00:05 hora del usuario, y también al arrancar) crea un movimiento por cada ocurrencia con fecha efectiva `<= hoy`, enlazado con `recurring_id`, y avanza `next_run_date` en la misma transacción de BD. Mensual en día 31 → último día del mes.
+
+### Frecuencia `monthly_days` (quincenal y días fijos)
+- `days_of_month`: obligatorio si `frequency = monthly_days` (si no, debe ser `null`). String con 1 a 3 valores separados por coma, sin repetir, ordenados al guardar: números `1`–`31` o `L` (= último día del mes). Ej.: `"15,L"` (quincena: 15 y último día), `"15,30"`, `"5"`. Inválido → 422.
+- `interval` se ignora (se guarda `1`). Monto = **por ocurrencia** (sueldo de 2.000.000/mes con `"15,L"` → `amount = "1000000"`).
+- Un día que no existe en el mes se ajusta al último día real: `30` en febrero → 28/29; `31` en abril → 30. Si dos valores caen en la misma fecha ajustada (p. ej. `"30,L"` en febrero) se genera **una sola** ocurrencia.
+- `weekend_adjust`: `none` (defecto) | `previous_business_day` → si la fecha cae sábado o domingo, el movimiento se fecha el viernes anterior. Aplica a todas las frecuencias. `next_run_date` guarda la fecha **nominal** (sin ajuste) para no duplicar ni saltar; `UpcomingItem.date` y el movimiento usan la fecha **efectiva** (ajustada), y el job genera cuando la fecha efectiva `<= hoy`.
+- `is_paycheck`: solo permitido en `type = income` (si no → 400). Marca la regla como "mi sueldo"; se usará para calcular las quincenas de pago. Puede haber varias reglas marcadas.
+- `monthly_equivalent` (solo lectura): equivalente mensual aproximado del monto (`monthly_days`: amount × cantidad de días; `monthly`: amount / interval; `weekly`: amount × 52/12/interval; `daily`: amount × 365/12/interval; `yearly`: amount / 12 / interval), redondeado a 2 decimales. Lo usa la UI para "≈ $ 2.000.000 al mes" y "Fijos al mes".
+- Cambiar `frequency`, `days_of_month`, `interval`, `start_date` o `weekend_adjust` recalcula `next_run_date` como la primera ocurrencia nominal > hoy (no regenera el pasado), igual que hoy.
 
 ## Metas de ahorro
 `GET /goals` → `Goal[]` · `POST /goals` · `PATCH /goals/{id}` · `DELETE /goals/{id}`
