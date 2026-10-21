@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Bolsillo · Recurrente quincenal</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&amp;family=Figtree:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#0F5E55;text-decoration:none}a:hover{color:#0B4740}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #16201B; color: #16201B; font-family: Figtree, system-ui, sans-serif; display: flex; flex-direction: column; justify-content: flex-end">
+
+  <div style="position: absolute; inset: 0; background: #F4F6F3; opacity: 0.18"></div>
+
+  <div role="dialog" aria-label="Nuevo recurrente" style="position: relative; background: #FFFFFF; border-radius: 28px 28px 0 0; padding: 10px 20px 24px; display: flex; flex-direction: column; gap: 14px; max-height: 812px; overflow-y: auto">
+    <div style="align-self: center; width: 40px; height: 5px; border-radius: 999px; background: #DDE3DE"></div>
+    <div style="display: flex; align-items: center; justify-content: space-between">
+      <span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 20px">Nuevo recurrente</span>
+      <a href="../Metas.dc.html" aria-label="Cerrar" style="width: 44px; height: 44px; border-radius: 14px; background: #F4F6F3; color: #16201B; display: flex; align-items: center; justify-content: center">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></a>
+    </div>
+
+    <div role="group" aria-label="Tipo" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; padding: 4px; background: #F0F3F0; border-radius: 14px">
+      <button style="height: 40px; border: 0; border-radius: 10px; background: transparent; color: #55615B; font: inherit; font-size: 14px; font-weight: 600">Gasto</button>
+      <button aria-pressed="true" style="height: 40px; border: 0; border-radius: 10px; background: #FFFFFF; color: #16201B; font: inherit; font-size: 14px; font-weight: 600; box-shadow: 0 1px 3px rgba(22,32,27,0.15)">Ingreso</button>
+    </div>
+
+    <div style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px">
+      <label style="display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 600; color: #55615B">Nota
+        <input type="text" value="Sueldo" style="height: 44px; box-sizing: border-box; border-radius: 12px; border: 1px solid #DDE3DE; padding: 0 12px; font: inherit; font-size: 15px; color: #16201B"></label>
+      <label style="display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 600; color: #55615B">Monto por pago
+        <input type="text" inputmode="decimal" value="1.000.000" style="height: 44px; box-sizing: border-box; border-radius: 12px; border: 1px solid #DDE3DE; padding: 0 12px; font: inherit; font-size: 15px; font-weight: 700; color: #1D4ED8"></label>
+    </div>
+    <div style="display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 12px; background: #E4ECFD; color: #1E3A8A; font-size: 13px">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 8h.01M11 12h1v4h1"></path></svg>
+      <span>{{monthlyText}}</span>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 8px">
+      <span style="font-size: 12px; font-weight: 600; color: #55615B">¿Cada cuánto?</span>
+      <div style="display: flex; flex-wrap: wrap; gap: 8px">
+        <sc-for list="{{freqs}}" as="f" hint-placeholder-count="5">
+          <button onClick="{{f.pick}}" aria-pressed="{{f.on}}" style="min-height: 40px; padding: 0 14px; border-radius: 999px; border: 1px solid {{f.border}}; background: {{f.bg}}; color: {{f.fg}}; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer">{{f.label}}</button>
+        </sc-for>
+      </div>
+      <sc-if value="{{custom}}" hint-placeholder-val="{{ false }}">
+        <div style="display: flex; flex-direction: column; gap: 6px; padding: 12px; border-radius: 14px; background: #F4F6F3">
+          <span style="font-size: 12px; color: #55615B">Elige hasta 3 días del mes</span>
+          <div style="display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 4px">
+            <sc-for list="{{days}}" as="d" hint-placeholder-count="32">
+              <button onClick="{{d.pick}}" aria-pressed="{{d.on}}" style="height: 34px; border-radius: 8px; border: 0; background: {{d.bg}}; color: {{d.fg}}; font: inherit; font-size: 12px; font-weight: 600; cursor: pointer">{{d.label}}</button>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border-radius: 14px; border: 1px solid #DDE3DE">
+      <span style="font-size: 12px; font-weight: 600; color: #55615B">Próximos pagos</span>
+      <sc-for list="{{upcoming}}" as="u" hint-placeholder-count="4">
+        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 14px">
+          <span style="font-weight: 600">{{u.date}}</span>
+          <span style="font-size: 12px; color: {{u.noteColor}}">{{u.note}}</span>
+        </div>
+      </sc-for>
+    </div>
+
+    <button onClick="{{toggleWeekend}}" role="switch" aria-checked="{{weekendOn}}" style="display: flex; align-items: center; gap: 12px; min-height: 52px; padding: 0; border: 0; background: transparent; font: inherit; text-align: left; cursor: pointer; color: #16201B">
+      <span style="flex: 1; display: flex; flex-direction: column"><span style="font-weight: 600; font-size: 14px">Si cae en fin de semana, el viernes antes</span><span style="font-size: 12px; color: #55615B">Como suelen pagar la nómina en Colombia</span></span>
+      <span style="width: 46px; height: 28px; border-radius: 999px; background: {{weekendTrack}}; display: flex; align-items: center; padding: 3px; box-sizing: border-box; justify-content: {{weekendJustify}}"><span style="width: 22px; height: 22px; border-radius: 999px; background: #FFFFFF"></span></span>
+    </button>
+    <button onClick="{{togglePay}}" role="switch" aria-checked="{{payOn}}" style="display: flex; align-items: center; gap: 12px; min-height: 52px; padding: 0; border: 0; background: transparent; font: inherit; text-align: left; cursor: pointer; color: #16201B">
+      <span style="flex: 1; display: flex; flex-direction: column"><span style="font-weight: 600; font-size: 14px">Es mi sueldo</span><span style="font-size: 12px; color: #55615B">Tus quincenas se miden de un pago al siguiente</span></span>
+      <span style="width: 46px; height: 28px; border-radius: 999px; background: {{payTrack}}; display: flex; align-items: center; padding: 3px; box-sizing: border-box; justify-content: {{payJustify}}"><span style="width: 22px; height: 22px; border-radius: 999px; background: #FFFFFF"></span></span>
+    </button>
+
+    <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px">
+      <label style="display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 600; color: #55615B">Cuenta
+        <select style="height: 44px; border-radius: 12px; border: 1px solid #DDE3DE; padding: 0 8px; font: inherit; font-size: 14px; color: #16201B; background: #FFFFFF"><option>Bancolombia</option><option>Nequi</option></select></label>
+      <label style="display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 600; color: #55615B">Categoría
+        <select style="height: 44px; border-radius: 12px; border: 1px solid #DDE3DE; padding: 0 8px; font: inherit; font-size: 14px; color: #16201B; background: #FFFFFF"><option>Salario</option><option>Freelance</option></select></label>
+      <label style="display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 600; color: #55615B">Desde
+        <input type="date" value="2026-10-15" style="height: 44px; box-sizing: border-box; border-radius: 12px; border: 1px solid #DDE3DE; padding: 0 6px; font: inherit; font-size: 13px; color: #16201B"></label>
+    </div>
+
+    <a href="../Metas.dc.html" style="height: 54px; border-radius: 16px; background: #0F5E55; color: #FFFFFF; font-size: 16px; font-weight: 700; display: flex; align-items: center; justify-content: center">Guardar recurrente</a>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { freq: 'q15L', weekend: true, pay: true, custom: [15, 'L'] }; }
+  renderVals() {
+    const { freq, weekend, pay, custom } = this.state;
+    const opts = [['q15L', 'Quincenal · 15 y último'], ['q1530', 'Quincenal · 15 y 30'], ['monthly', 'Mensual'], ['weekly', 'Semanal'], ['custom', 'Días del mes…']];
+    const freqs = opts.map(([id, label]) => {
+      const on = id === freq;
+      return { label, on: on ? 'true' : 'false', bg: on ? '#0F5E55' : '#FFFFFF', fg: on ? '#FFFFFF' : '#16201B', border: on ? '#0F5E55' : '#DDE3DE', pick: () => this.setState({ freq: id }) };
+    });
+    const days = [];
+    for (let i = 1; i <= 31; i++) days.push(i);
+    days.push('L');
+    const dayBtns = days.map((d) => {
+      const on = custom.indexOf(d) >= 0;
+      return {
+        label: d === 'L' ? 'Últ.' : String(d), on: on ? 'true' : 'false', bg: on ? '#0F5E55' : '#FFFFFF', fg: on ? '#FFFFFF' : '#16201B',
+        pick: () => {
+          const cur = this.state.custom;
+          const next = cur.indexOf(d) >= 0 ? cur.filter((x) => x !== d) : (cur.length < 3 ? cur.concat([d]) : cur);
+          this.setState({ custom: next });
+        }
+      };
+    });
+    const sched = {
+      q15L: [['jue 15 oct', ''], ['sáb 31 oct', 'vie 30 oct'], ['dom 15 nov', 'vie 13 nov'], ['lun 30 nov', '']],
+      q1530: [['jue 15 oct', ''], ['vie 30 oct', ''], ['dom 15 nov', 'vie 13 nov'], ['lun 30 nov', '']],
+      monthly: [['jue 15 oct', ''], ['dom 15 nov', 'vie 13 nov'], ['mar 15 dic', ''], ['vie 15 ene', '']],
+      weekly: [['jue 15 oct', ''], ['jue 22 oct', ''], ['jue 29 oct', ''], ['jue 5 nov', '']],
+      custom: [['jue 15 oct', ''], ['sáb 31 oct', 'vie 30 oct'], ['dom 15 nov', 'vie 13 nov'], ['lun 30 nov', '']]
+    }[freq];
+    const upcoming = sched.map(([nominal, moved]) => ({
+      date: weekend && moved ? moved : nominal,
+      note: weekend && moved ? 'cae fin de semana → se adelanta' : 'Bancolombia',
+      noteColor: weekend && moved ? '#9A3412' : '#55615B'
+    }));
+    const perMonth = { q15L: 2, q1530: 2, monthly: 1, weekly: 52 / 12, custom: Math.max(1, custom.length) }[freq];
+    const monthly = Math.round(1000000 * perMonth);
+    return {
+      freqs, days: dayBtns, custom: freq === 'custom', upcoming,
+      monthlyText: '1.000.000 por pago ≈ $ ' + monthly.toLocaleString('es-CO') + ' al mes',
+      weekendOn: weekend ? 'true' : 'false', weekendTrack: weekend ? '#0F5E55' : '#C9D1CC', weekendJustify: weekend ? 'flex-end' : 'flex-start',
+      payOn: pay ? 'true' : 'false', payTrack: pay ? '#0F5E55' : '#C9D1CC', payJustify: pay ? 'flex-end' : 'flex-start',
+      toggleWeekend: () => this.setState({ weekend: !weekend }),
+      togglePay: () => this.setState({ pay: !pay })
+    };
+  }
+}
+</script>
+</body>
+</html>

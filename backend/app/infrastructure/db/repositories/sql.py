@@ -1,7 +1,7 @@
 """Repositorios SQLAlchemy. Las agregaciones se resuelven en SQL."""
 from __future__ import annotations
 
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from decimal import Decimal
 from uuid import UUID
 
@@ -348,12 +348,14 @@ class SqlRecurringRepository(SqlRepo[RecurringRule]):
         return [self.to_entity(r) for r in await self.session.scalars(stmt)]
 
     async def lock_due(self, user_id: UUID, today: date) -> list[RecurringRule]:
+        # next_run_date es nominal: con ajuste de fin de semana la fecha efectiva puede ser hasta
+        # 2 días anterior, así que se traen con holgura y el servicio decide con la fecha efectiva.
         stmt = (
             select(RecurringRuleModel)
             .where(
                 RecurringRuleModel.user_id == user_id,
                 RecurringRuleModel.active.is_(True),
-                RecurringRuleModel.next_run_date <= today,
+                RecurringRuleModel.next_run_date <= today + timedelta(days=2),
             )
             .order_by(RecurringRuleModel.next_run_date, RecurringRuleModel.id)
             .with_for_update()

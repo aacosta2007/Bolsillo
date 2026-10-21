@@ -422,3 +422,78 @@ async def test_export_csv(api, cats):
     assert len(lines) == 6
     assert any("transferencia,500000.00,Principal,,Ahorros," in ln for ln in lines)
     assert any('1500.50,Principal,Comida,,"Café, con ""leche"""' in ln for ln in lines)
+
+
+# ---------------- recurrentes por días del mes ----------------
+async def test_quincenal_paycheck_run_and_idempotency(api, cats, monkeypatch):
+    import app.api.v1.recurring as recurring_api
+
+    a = await mk_account(api)
+    fake_today = date(2026, 10, 15)
+    monkeypatch.setattr(recurring_api, "today_in", lambda tz: fake_today)
+    r = await api.post(f"{V1}/recurring", json={
+        "type": "income", "amount": "1000000", "account_id": a["id"], "category_id": cats["Salario"]["id"],
+        "note": "Sueldo", "frequency": "monthly_days", "days_of_month": "L,15", "interval": 7,
+        "start_date": "2026-09-01", "is_paycheck": True,
+    })
+    assert r.status_code == 201, r.text
+    rule = r.json()
+    assert rule["days_of_month"] == "15,L" and rule["interval"] == 1 and rule["is_paycheck"] is True
+    assert rule["weekend_adjust"] == "none" and rule["next_run_date"] == "2026-09-15"
+    assert rule["monthly_equivalent"] == "2000000.00"
+
+    assert (await api.post(f"{V1}/recurring/run")).json() == {"created": 3}
+    assert (await api.post(f"{V1}/recurring/run")).json() == {"created": 0}  # idempotente
+    txs = (await api.get(f"{V1}/transactions")).json()["items"]
+    assert sorted(t["date"] for t in txs) == ["2026-09-15", "2026-09-30", "2026-10-15"]
+    assert all(t["recurring_id"] == rule["id"] for t in txs)
+    assert (await api.get(f"{V1}/recurring")).json()[0]["next_run_date"] == "2026-10-31"
+
+
+async def test_quincenal_weekend_adjust_and_upcoming_effective_dates(api, cats, monkeypatch):
+    import app.api.v1.recurring as recurring_api
+
+    a = await mk_account(api)
+    monkeypatch.setattr(recurring_api, "today_in", lambda tz: date(2026, 10, 20))
+    r = await api.post(f"{V1}/recurring", json={
+        "type": "income", "amount": "1000000", "account_id": a["id"], "category_id": cats["Salario"]["id"],
+        "frequency": "monthly_days", "days_of_month": "15,L", "weekend_adjust": "previous_business_day",
+        "start_date": "2026-10-16", "is_paycheck": True,
+    })
+    assert r.status_code == 201, r.text
+    assert r.json()["next_run_date"] == "2026-10-31"  # nominal: sábado
+    up = (await api.get(f"{V1}/recurring/upcoming", params={"days": 60})).json()
+    assert [(i["date"], i["is_paycheck"]) for i in up] == [
+        ("2026-10-30", True), ("2026-11-13", True), ("2026-11-30", True), ("2026-12-15", True)]
+    # el job genera con la fecha efectiva: el viernes 30 ya vence aunque el nominal sea el sábado 31
+    monkeypatch.setattr(recurring_api, "today_in", lambda tz: date(2026, 10, 30))
+    assert (await api.post(f"{V1}/recurring/run")).json() == {"created": 1}
+    txs = (await api.get(f"{V1}/transactions")).json()["items"]
+    assert [t["date"] for t in txs] == ["2026-10-30"]
+    assert (await api.post(f"{V1}/recurring/run")).json() == {"created": 0}
+
+
+async def test_recurring_days_validation(api, cats):
+    a = await mk_account(api)
+    base = {"type": "income", "amount": "10", "account_id": a["id"], "category_id": cats["Salario"]["id"],
+            "start_date": TODAY.isoformat()}
+    md = {**base, "frequency": "monthly_days"}
+    # is_paycheck solo en ingresos
+    assert (await api.post(f"{V1}/recurring", json={
+        **md, "days_of_month": "15", "type": "expense", "category_id": cats["Comida"]["id"], "is_paycheck": True,
+    })).status_code == 400
+    # days_of_month con otra frecuencia / ausente con monthly_days
+    assert (await api.post(f"{V1}/recurring", json={**base, "frequency": "monthly", "days_of_month": "15"})).status_code == 400
+    assert (await api.post(f"{V1}/recurring", json=md)).status_code == 400
+    # formato inválido -> 422
+    for bad in ("0", "32", "15,15", "1,2,3,4", "x"):
+        assert (await api.post(f"{V1}/recurring", json={**md, "days_of_month": bad})).status_code == 422, bad
+    assert (await api.post(f"{V1}/recurring", json={**md, "days_of_month": "15", "weekend_adjust": "x"})).status_code == 422
+    # PATCH: formato inválido 422; is_paycheck en gasto 400; recalcula next_run_date
+    ok = (await api.post(f"{V1}/recurring", json={**md, "days_of_month": "15,L"})).json()
+    assert (await api.patch(f"{V1}/recurring/{ok['id']}", json={"days_of_month": "40"})).status_code == 422
+    p = await api.patch(f"{V1}/recurring/{ok['id']}", json={"days_of_month": "L"})
+    assert p.status_code == 200 and p.json()["days_of_month"] == "L"
+    p = await api.patch(f"{V1}/recurring/{ok['id']}", json={"frequency": "weekly"})
+    assert p.json()["days_of_month"] is None
+    assert (await api.patch(f"{V1}/recurring/{ok['id']}", json={"frequency": "monthly_days"})).status_code == 400

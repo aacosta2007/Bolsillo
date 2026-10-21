@@ -25,6 +25,12 @@ class Frequency(StrEnum):
     WEEKLY = "weekly"
     MONTHLY = "monthly"
     YEARLY = "yearly"
+    MONTHLY_DAYS = "monthly_days"  # días fijos del mes (quincenal: "15,L")
+
+
+class WeekendAdjust(StrEnum):
+    NONE = "none"
+    PREVIOUS_BUSINESS_DAY = "previous_business_day"
 
 
 class BudgetState(StrEnum):

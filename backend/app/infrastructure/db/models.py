@@ -19,6 +19,7 @@ from sqlalchemy import (
     UniqueConstraint,
     Uuid,
     func,
+    text,
 )
 from sqlalchemy.types import TypeDecorator
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
@@ -210,8 +211,15 @@ class RecurringRuleModel(Base):
         Uuid, ForeignKey("categories.id", ondelete="RESTRICT"), nullable=False
     )
     note: Mapped[str | None] = mapped_column(String(500))
-    frequency: Mapped[str] = mapped_column(String(10), nullable=False)
+    frequency: Mapped[str] = mapped_column(String(20), nullable=False)
     interval: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    days_of_month: Mapped[str | None] = mapped_column(String(20))
+    weekend_adjust: Mapped[str] = mapped_column(
+        String(30), nullable=False, default="none", server_default="none"
+    )
+    is_paycheck: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default=text("0")
+    )
     start_date: Mapped[date] = mapped_column(Date, nullable=False)
     end_date: Mapped[date | None] = mapped_column(Date)
     next_run_date: Mapped[date] = mapped_column(Date, nullable=False)
@@ -221,7 +229,8 @@ class RecurringRuleModel(Base):
     __table_args__ = (
         CheckConstraint("type IN ('income','expense')", name="type"),
         CheckConstraint("amount > 0", name="amount_positive"),
-        CheckConstraint("frequency IN ('daily','weekly','monthly','yearly')", name="frequency"),
+        CheckConstraint("frequency IN ('daily','weekly','monthly','yearly','monthly_days')", name="frequency"),
+        CheckConstraint("weekend_adjust IN ('none','previous_business_day')", name="weekend_adjust"),
         CheckConstraint("`interval` >= 1", name="interval_positive"),
         CheckConstraint("end_date IS NULL OR end_date >= start_date", name="dates"),
         Index("ix_recurring_rules_user_active_next", "user_id", "active", "next_run_date"),

@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Reporte PDF · Página 3</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&amp;family=Figtree:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#0F5E55}a:hover{color:#0B4740}
+</style>
+</helmet>
+<div style="width: 794px; height: 1123px; box-sizing: border-box; background: #FFFFFF; color: #16201B; font-family: Figtree, system-ui, sans-serif; display: flex; flex-direction: column">
+
+  <div style="margin: 36px 56px 0; padding-bottom: 12px; display: flex; justify-content: space-between; align-items: baseline; border-bottom: 3px solid #0F5E55">
+    <span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 24px">Presupuestos, ahorro y metas</span>
+    <span style="font-size: 12px; color: #55615B">Octubre 2026</span>
+  </div>
+
+  <div style="flex: 1; padding: 24px 56px; display: flex; flex-direction: column; gap: 28px">
+
+    <div style="display: flex; flex-direction: column; gap: 12px">
+      <div style="display: flex; justify-content: space-between; align-items: baseline">
+        <span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 17px">Presupuestos</span>
+        <div style="display: flex; gap: 8px">
+          <span style="padding: 4px 10px; border-radius: 999px; background: #E3F0ED; color: #0B4740; font-size: 12px; font-weight: 700">3 cumplidos</span>
+          <span style="padding: 4px 10px; border-radius: 999px; background: #FFF0DC; color: #8A4A0F; font-size: 12px; font-weight: 700">1 en riesgo</span>
+          <span style="padding: 4px 10px; border-radius: 999px; background: #FDE3D6; color: #8A2C07; font-size: 12px; font-weight: 700">1 excedido</span>
+        </div>
+      </div>
+      <sc-for list="{{budgets}}" as="b" hint-placeholder-count="5">
+        <div style="display: grid; grid-template-columns: 150px minmax(0, 1fr) 190px; gap: 16px; align-items: center; font-size: 13px">
+          <span style="font-weight: 600">{{b.name}}</span>
+          <div style="position: relative; height: 12px; border-radius: 999px; background: #EEF1EE">
+            <div style="width: {{b.width}}; height: 100%; border-radius: 999px; background: {{b.bar}}"></div>
+            <div style="position: absolute; left: 80%; top: -3px; width: 2px; height: 18px; background: #A9B5AE"></div>
+          </div>
+          <span style="text-align: right; font-variant-numeric: tabular-nums"><strong>{{b.pct}}</strong> · {{b.detail}}</span>
+        </div>
+      </sc-for>
+      <span style="font-size: 11px; color: #7A857F">La línea gris marca el umbral de alerta (80 %).</span>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px">
+      <div style="display: flex; flex-direction: column; gap: 12px">
+        <span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 17px">Metas de ahorro</span>
+        <sc-for list="{{goals}}" as="g" hint-placeholder-count="3">
+          <div style="display: flex; gap: 14px; align-items: center; padding: 12px 14px; border: 1px solid #E2E7E3; border-radius: 14px">
+            <svg width="56" height="56" viewBox="0 0 36 36" role="img" aria-label="{{g.aria}}" style="flex-shrink: 0">
+              <circle cx="18" cy="18" r="15" fill="none" stroke="#EEF1EE" stroke-width="4"></circle>
+              <circle cx="18" cy="18" r="15" fill="none" stroke="{{g.color}}" stroke-width="4" stroke-linecap="round" stroke-dasharray="{{g.dash}}" transform="rotate(-90 18 18)"></circle>
+              <text x="18" y="21" text-anchor="middle" font-size="8.5" font-weight="700" fill="#16201B" font-family="Figtree, sans-serif">{{g.pct}}</text>
+            </svg>
+            <div style="flex: 1; display: flex; flex-direction: column; gap: 2px; font-size: 12px">
+              <span style="font-weight: 700; font-size: 14px">{{g.name}}</span>
+              <span style="color: #3D4843">{{g.progress}}</span>
+              <span style="font-weight: 700; color: {{g.stateColor}}">{{g.state}}</span>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 12px">
+        <span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 17px">Tasa de ahorro · 6 meses</span>
+        <div style="padding: 16px; border-radius: 14px; background: #F4F6F3; display: flex; flex-direction: column; gap: 10px">
+          <svg width="100%" height="150" viewBox="0 0 300 150" role="img" aria-label="Tasa de ahorro mensual de mayo a octubre" preserveAspectRatio="none">
+            <line x1="0" y1="120" x2="300" y2="120" stroke="#DDE3DE" stroke-width="1"></line>
+            <line x1="0" y1="60" x2="300" y2="60" stroke="#DDE3DE" stroke-width="1" stroke-dasharray="4 4"></line>
+            <polyline points="{{ratePoints}}" fill="none" stroke="#0F5E55" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"></polyline>
+            <sc-for list="{{rate}}" as="r" hint-placeholder-count="6">
+              <circle cx="{{r.x}}" cy="{{r.y}}" r="4.5" fill="#FFFFFF" stroke="#0F5E55" stroke-width="2.5"></circle>
+            </sc-for>
+          </svg>
+          <div style="display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); font-size: 11px; color: #55615B; text-align: center">
+            <sc-for list="{{rate}}" as="r" hint-placeholder-count="6"><span>{{r.label}}<br><strong style="color: #16201B">{{r.value}}</strong></span></sc-for>
+          </div>
+          <span style="font-size: 11px; color: #7A857F">Línea punteada: meta sugerida del 20 %.</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="padding: 20px 22px; border-radius: 16px; background: #0F5E55; color: #FFFFFF; display: flex; flex-direction: column; gap: 8px">
+      <span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 17px">Para noviembre</span>
+      <span style="font-size: 13px; line-height: 1.55; color: #E3F0ED">Si mantienes Comida en $ 400.000 y Entretenimiento en $ 100.000, ahorrarías cerca de $ 740.000 (31 %). Tu Fondo de emergencia necesita $ 300.000 al mes para llegar a la meta en diciembre de 2027.</span>
+    </div>
+  </div>
+
+  <div style="padding: 0 56px 28px; display: flex; justify-content: space-between; font-size: 11px; color: #7A857F">
+    <span>Bolsillo · Reporte de octubre 2026 · Cálculos automáticos a partir de tus movimientos</span><span>Página 3 de 3</span>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":794,"height":1123}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const f = (n) => '$ ' + n.toLocaleString('es-CO');
+    const budgets = [
+      ['Hogar/Arriendo', 700000, 700000], ['Comida', 452300, 600000], ['Transporte', 160000, 200000], ['Servicios', 182000, 250000], ['Entretenimiento', 120000, 100000]
+    ].map(([name, spent, limit]) => {
+      const p = Math.round(spent / limit * 100);
+      return { name, width: Math.min(100, p) + '%', pct: p + ' %', detail: f(spent) + ' de ' + f(limit), bar: p > 100 ? '#B33A0A' : p >= 80 && p < 100 ? '#E58A2E' : '#0F5E55' };
+    });
+    const C = 2 * Math.PI * 15;
+    const goals = [
+      ['Viaje a Cartagena', '#0F5E55', 1050000, 3000000, 'Vas bien: aportaste $ 300.000', '#0F5E55'],
+      ['Fondo de emergencia', '#2563EB', 2400000, 6000000, 'Atrasada: sin aportes este mes', '#B33A0A'],
+      ['Portátil nuevo', '#C2410C', 3100000, 3500000, 'Casi: faltan $ 400.000', '#0F5E55']
+    ].map(([name, color, saved, target, state, stateColor]) => {
+      const p = saved / target;
+      return { name, color, state, stateColor, pct: Math.round(p * 100) + '%', dash: (C * p).toFixed(1) + ' ' + C.toFixed(1), progress: f(saved) + ' de ' + f(target), aria: name + ' ' + Math.round(p * 100) + ' por ciento' };
+    });
+    const vals = [['May', 12.5], ['Jun', 9], ['Jul', 23.8], ['Ago', -1], ['Sep', 20.5], ['Oct', 28.3]];
+    const rate = vals.map(([label, v], i) => ({ label, value: String(v).replace('.', ',') + ' %', x: 25 + i * 50, y: Math.round(120 - v * 3) }));
+    return { budgets, goals, rate, ratePoints: rate.map((r) => r.x + ',' + r.y).join(' ') };
+  }
+}
+</script>
+</body>
+</html>

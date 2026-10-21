@@ -4,6 +4,7 @@ export { Card, CardHeader, PageHeader } from './Card';
 export { Field, Input, Select, Textarea, FormError } from './Field';
 export { Sheet, ConfirmSheet } from './Sheet';
 export { Chip, StatusChip, Segmented } from './Chip';
+export { Switch } from './Switch';
 export { ProgressBar } from './ProgressBar';
 export { Skeleton, ListSkeleton, EmptyState, ErrorState, errorMessage } from './States';
 export { Money } from './Money';
