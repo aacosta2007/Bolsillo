@@ -8,7 +8,7 @@ FastAPI + SQLAlchemy 2.0 async (asyncmy) sobre MariaDB 11.4. Contrato: `../docs/
 api  ->  application  ->  domain  <-  infrastructure
 ```
 
-- `app/domain`: entidades, enums, excepciones, reglas puras (`rules.py`), interfaces de repositorio (`repositories.py`) y datos por defecto (`defaults.py`).
+- `app/domain`: entidades, enums, excepciones, reglas puras (`rules.py`, `pay_periods.py` para las quincenas de pago), interfaces de repositorio (`repositories.py`) y datos por defecto (`defaults.py`).
 - `app/application`: casos de uso por módulo. Dependen solo de `domain`.
 - `app/infrastructure`: ORM, repositorios SQL, Unit of Work, seguridad (argon2/JWT), scheduler, rate limit.
 - `app/api`: routers `/api/v1`, schemas, dependencias y manejo de errores.

@@ -106,3 +106,18 @@ export const FREQ_LABEL: Record<string, string> = {
   monthly: 'Mensual',
   yearly: 'Anual',
 };
+
+/** Días entre dos fechas ISO (b − a). */
+export function daysBetween(a: string, b: string): number {
+  const pa = parseISO(a);
+  const pb = parseISO(b);
+  return Math.round((Date.UTC(pb.y, pb.m - 1, pb.d) - Date.UTC(pa.y, pa.m - 1, pa.d)) / 86_400_000);
+}
+
+/** "15 – 29 oct" (mismo mes) o "30 sep – 14 oct". */
+export function rangeLabel(start: string, end: string): string {
+  const s = parseISO(start);
+  const e = parseISO(end);
+  if (s.y === e.y && s.m === e.m) return `${s.d} – ${e.d} ${MONTHS_SHORT[e.m - 1]}`;
+  return `${s.d} ${MONTHS_SHORT[s.m - 1]} – ${e.d} ${MONTHS_SHORT[e.m - 1]}`;
+}

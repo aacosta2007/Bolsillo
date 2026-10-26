@@ -186,7 +186,7 @@ PayPeriod = {
 - `days_elapsed` = días desde `start` hasta hoy inclusive (solo en curso; si no, = `days`). `days_remaining` = `days − days_elapsed` + 1 si en curso (incluye hoy), 0 si cerrado.
 - `spent_per_day` = `expense / days_elapsed`. `available_per_day` (solo en curso, si no null) = `max(net, 0) / days_remaining`.
 - `spent_percent` = expense/income×100 (0 si income = 0); `time_percent` = days_elapsed/days×100. Ambos con 1 decimal.
-- `status`: en curso → `en_curso`; `net < 0` → `deficit`; `net < 10 % de income` → `justo`; si no → `ahorro`.
+- `status`: en curso → `en_curso`; `net < 0` → `deficit`; `income = 0` o `net < 10 % de income` → `justo`; si no → `ahorro`. Si una regla de sueldo terminó (`end_date`) y no hay pago siguiente, el periodo en curso cierra el 15 o el fin de mes, lo que llegue primero.
 - `by_category`: gastos del periodo agrupados (igual que en dashboard).
 
 ## Exportar

@@ -4,7 +4,7 @@ from __future__ import annotations
 import datetime as dt
 from datetime import datetime
 from decimal import Decimal
-from typing import Annotated, ClassVar, Generic, TypeVar
+from typing import Annotated, ClassVar, Generic, Literal, TypeVar
 from uuid import UUID
 
 from pydantic import (
@@ -411,6 +411,31 @@ class TrendNetOut(TrendOut):
     net: Money
 
 
+class PayPeriodOut(ORM):
+    start: Date
+    end: Date
+    days: int
+    days_elapsed: int
+    days_remaining: int
+    in_progress: bool
+    source: Literal["paycheck", "calendar"]
+    income: Money
+    expense: Money
+    net: Money
+    spent_per_day: Money
+    available_per_day: Money | None
+    spent_percent: float
+    time_percent: float
+    status: Literal["en_curso", "ahorro", "justo", "deficit"]
+    by_category: list[CategoryReportOut]
+
+
+class NextPaydayOut(ORM):
+    date: Date
+    amount: Money
+    note: str | None
+
+
 class DashboardOut(BaseModel):
     period: dict[str, Date]
     total_balance: Money
@@ -424,3 +449,6 @@ class DashboardOut(BaseModel):
     budgets_at_risk: list[BudgetStatusOut]
     upcoming_recurring: list[UpcomingOut]
     recent_transactions: list[TransactionOut]
+    current_pay_period: PayPeriodOut | None
+    previous_pay_period: PayPeriodOut | None
+    next_payday: NextPaydayOut | None

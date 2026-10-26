@@ -20,6 +20,14 @@ from app.domain.entities import (
 from app.domain.enums import BudgetState, TransactionType
 from app.domain.exceptions import BusinessRuleError
 from app.domain.repositories import UnitOfWork
+from app.domain.pay_periods import (
+    PayPeriod,
+    Payday,
+    PeriodSpan,
+    build_spans,
+    paydays,
+    period_metrics,
+)
 from app.domain.rules import add_months, first_of_month, last_of_month
 
 ZERO = Decimal("0.00")
@@ -59,6 +67,9 @@ class Dashboard:
     budgets_at_risk: list[BudgetStatus]
     upcoming_recurring: list[UpcomingItem]
     recent_transactions: list[Transaction]
+    current_pay_period: PayPeriod | None = None
+    previous_pay_period: PayPeriod | None = None
+    next_payday: Payday | None = None
 
 
 def _percent_rows(totals: list[CategoryTotal]) -> list[CategoryReportRow]:
@@ -112,6 +123,21 @@ class ReportService:
         today = await self._today(user_id)
         return await self._trend(user_id, months, today)
 
+    async def _period(self, user_id: UUID, span: PeriodSpan, today: date) -> PayPeriod:
+        tx = self.uow.transactions
+        income, expense = await tx.totals(user_id, span.start, span.end)  # sin transferencias
+        period = period_metrics(span, today, income, expense)
+        period.by_category = _percent_rows(
+            await tx.category_totals(user_id, span.start, span.end, TransactionType.EXPENSE)
+        )
+        return period
+
+    async def pay_periods(self, user_id: UUID, count: int) -> list[PayPeriod]:
+        """Quincenas de pago de la más reciente (la que contiene hoy) a la más antigua."""
+        today = await self._today(user_id)
+        pay_dates = [p.date for p in paydays(await self.uow.recurring.list(user_id), today)]
+        return [await self._period(user_id, s, today) for s in build_spans(pay_dates, today, count)]
+
     async def dashboard(self, user_id: UUID, start: date | None, end: date | None) -> Dashboard:
         today = await self._today(user_id)
         if start is None:
@@ -123,6 +149,8 @@ class ReportService:
         income, expense = await tx.totals(user_id, start, end)
         budgets = await BudgetService(self.uow).list(user_id, first_of_month(end))
         upcoming = await RecurringService(self.uow).upcoming(user_id, 7, today)
+        paydays_ = paydays(await self.uow.recurring.list(user_id), today)
+        spans = build_spans([p.date for p in paydays_], today, 2)
         return Dashboard(
             period_from=start,
             period_to=end,
@@ -139,6 +167,9 @@ class ReportService:
             budgets_at_risk=[b for b in budgets if b.status != BudgetState.OK],
             upcoming_recurring=upcoming,
             recent_transactions=await tx.recent(user_id, 5),
+            current_pay_period=await self._period(user_id, spans[0], today),
+            previous_pay_period=await self._period(user_id, spans[1], today),
+            next_payday=next((p for p in paydays_ if p.date > today), None),
         )
 
     async def export_csv(self, user_id: UUID, start: date | None, end: date | None) -> tuple[str, date, date]:

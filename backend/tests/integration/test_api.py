@@ -497,3 +497,83 @@ async def test_recurring_days_validation(api, cats):
     p = await api.patch(f"{V1}/recurring/{ok['id']}", json={"frequency": "weekly"})
     assert p.json()["days_of_month"] is None
     assert (await api.patch(f"{V1}/recurring/{ok['id']}", json={"frequency": "monthly_days"})).status_code == 400
+
+
+# ---------------- quincenas de pago ----------------
+def _fix_today(monkeypatch, d):
+    import app.api.v1.recurring as recurring_api
+    import app.application.reports as reports
+
+    monkeypatch.setattr(reports, "today_in", lambda tz: d)
+    monkeypatch.setattr(recurring_api, "today_in", lambda tz: d)
+
+
+async def _paycheck_scenario(api, cats):
+    a = await mk_account(api)
+    b = await mk_account(api, "Ahorros")
+    r = await api.post(f"{V1}/recurring", json={
+        "type": "income", "amount": "1000000", "account_id": a["id"], "category_id": cats["Salario"]["id"],
+        "note": "Sueldo", "frequency": "monthly_days", "days_of_month": "15,L",
+        "weekend_adjust": "previous_business_day", "start_date": "2026-10-01", "is_paycheck": True,
+    })
+    assert r.status_code == 201, r.text
+    for day, amount in (("2026-10-15", "1000000"), ("2026-10-30", "1000000"), ("2026-11-13", "1000000")):
+        r = await mk_tx(api, **tx_body(a, cats["Salario"], amount, "income", date.fromisoformat(day)))
+        assert r.status_code == 201, r.text
+    for day, amount in (("2026-10-16", "200000"), ("2026-10-29", "100000"), ("2026-11-12", "50000"),
+                        ("2026-11-14", "300000"), ("2026-11-20", "100000")):
+        r = await mk_tx(api, **tx_body(a, cats["Comida"], amount, day=date.fromisoformat(day)))
+        assert r.status_code == 201, r.text
+    r = await mk_tx(api, type="transfer", amount="999999", date="2026-11-15", account_id=a["id"],
+                    transfer_account_id=b["id"])
+    assert r.status_code == 201, r.text
+
+
+async def test_pay_periods_with_paycheck_rule(api, cats, monkeypatch):
+    _fix_today(monkeypatch, date(2026, 11, 20))
+    await _paycheck_scenario(api, cats)
+    r = await api.get(f"{V1}/reports/pay-periods", params={"count": 3})
+    assert r.status_code == 200, r.text
+    cur, prev, old = r.json()
+    assert (cur["start"], cur["end"], cur["days"], cur["source"]) == ("2026-11-13", "2026-11-29", 17, "paycheck")
+    assert (cur["days_elapsed"], cur["days_remaining"], cur["in_progress"]) == (8, 10, True)
+    assert (cur["income"], cur["expense"], cur["net"]) == ("1000000.00", "400000.00", "600000.00")  # sin transferencia
+    assert (cur["spent_per_day"], cur["available_per_day"]) == ("50000.00", "60000.00")
+    assert (cur["spent_percent"], cur["time_percent"], cur["status"]) == (40.0, 47.1, "en_curso")
+    assert [(c["name"], c["total"], c["percent"]) for c in cur["by_category"]] == [("Comida", "400000.00", 100.0)]
+    assert (prev["start"], prev["end"], prev["in_progress"], prev["status"]) == (
+        "2026-10-30", "2026-11-12", False, "ahorro")
+    assert (prev["income"], prev["expense"], prev["available_per_day"], prev["days_remaining"]) == (
+        "1000000.00", "50000.00", None, 0)
+    assert (old["start"], old["end"], old["expense"], old["source"]) == (
+        "2026-10-15", "2026-10-29", "300000.00", "paycheck")
+    # defecto = 6 periodos; los más antiguos caen en el respaldo de calendario
+    six = (await api.get(f"{V1}/reports/pay-periods")).json()
+    assert len(six) == 6 and six[3]["source"] == "calendar" and six[3]["end"] == "2026-10-14"
+    for bad in (0, 25):
+        assert (await api.get(f"{V1}/reports/pay-periods", params={"count": bad})).status_code == 422
+
+
+async def test_dashboard_pay_period_fields(api, cats, monkeypatch):
+    _fix_today(monkeypatch, date(2026, 11, 20))
+    await _paycheck_scenario(api, cats)
+    d = (await api.get(f"{V1}/dashboard/summary")).json()
+    assert d["current_pay_period"]["start"] == "2026-11-13" and d["current_pay_period"]["net"] == "600000.00"
+    assert d["previous_pay_period"]["start"] == "2026-10-30" and d["previous_pay_period"]["status"] == "ahorro"
+    assert d["next_payday"] == {"date": "2026-11-30", "amount": "1000000.00", "note": "Sueldo"}
+    assert "period" in d and "recent_transactions" in d  # campos existentes intactos
+
+
+async def test_pay_periods_calendar_fallback_without_paycheck(api, cats, monkeypatch):
+    _fix_today(monkeypatch, date(2026, 10, 25))
+    a = await mk_account(api)
+    await mk_tx(api, **tx_body(a, cats["Comida"], "30000", day=date(2026, 10, 20)))
+    await mk_tx(api, **tx_body(a, cats["Salario"], "500000", "income", date(2026, 10, 10)))
+    periods = (await api.get(f"{V1}/reports/pay-periods", params={"count": 2})).json()
+    assert [(p["start"], p["end"], p["source"]) for p in periods] == [
+        ("2026-10-16", "2026-10-31", "calendar"), ("2026-10-01", "2026-10-15", "calendar")]
+    assert periods[0]["expense"] == "30000.00" and periods[0]["days_elapsed"] == 10
+    assert periods[1]["income"] == "500000.00"
+    d = (await api.get(f"{V1}/dashboard/summary")).json()
+    assert d["next_payday"] is None and d["current_pay_period"]["source"] == "calendar"
+    assert d["previous_pay_period"]["start"] == "2026-10-01"
