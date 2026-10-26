@@ -1,22 +1,30 @@
 import * as Tabs from '@radix-ui/react-tabs';
 import { useSearchParams } from 'react-router-dom';
+import { useTimezone } from '@/features/auth/AuthContext';
 import { PageHeader } from '@/shared/ui';
 import { MonthTab } from '../components/MonthTab';
 import { PayPeriodsTab } from '../components/PayPeriodsTab';
+import { PdfButton, PdfError } from '../components/PdfButton';
+import { resolveReportMonth } from '../monthly';
+import { useMonthlyPdf } from '../pdf';
 
 export function ReportsPage() {
   const [params, setParams] = useSearchParams();
+  const tz = useTimezone();
   const tab = params.get('tab') === 'quincenas' ? 'quincenas' : 'mes';
+  const month = resolveReportMonth(params.get('mes'), tz);
+  const pdf = useMonthlyPdf(month);
 
   const trigger =
     'h-10 rounded-[10px] text-sm font-semibold text-muted data-[state=active]:bg-surface data-[state=active]:text-ink data-[state=active]:shadow-[0_1px_3px_rgba(22,32,27,0.15)]';
 
   return (
     <div className="flex flex-col gap-4 px-5 pb-6 pt-5">
-      <PageHeader title="Reportes" />
+      <PageHeader title="Reportes" actions={tab === 'mes' ? <PdfButton pdf={pdf} /> : undefined} />
+      {tab === 'mes' && <PdfError pdf={pdf} />}
       <Tabs.Root
         value={tab}
-        onValueChange={(v) => setParams(v === 'quincenas' ? { tab: 'quincenas' } : {}, { replace: true })}
+        onValueChange={(v) => setParams(v === 'quincenas' ? { tab: 'quincenas' } : { tab: 'mes', mes: month }, { replace: true })}
         className="flex flex-col gap-4"
       >
         <Tabs.List aria-label="Vista" className="grid grid-cols-2 gap-1 rounded-ctl2 bg-[#E7EBE7] p-1">

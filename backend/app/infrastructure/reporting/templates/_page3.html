@@ -1,0 +1,60 @@
+<section class="page">
+  <div class="ph"><span class="t">Presupuestos, ahorro y metas</span><span class="m">{{ title }}</span></div>
+
+  <div class="body3">
+    <div>
+      <div class="sec-head">
+        <div class="l h3">Presupuestos</div>
+        <div class="rt chips">{% for c in budget_chips %}<span style="background: {{ c.bg }}; color: {{ c.fg }}">{{ c.text }}</span>{% endfor %}</div>
+      </div>
+      {% for b in budgets %}
+      <div class="brow">
+        <div class="c n">{{ b.name }}</div>
+        <div class="c bar">{{ b.bar }}</div>
+        <div class="c d"><strong>{{ b.pct }}</strong> · {{ b.detail }}</div>
+      </div>
+      {% endfor %}
+      {% if budgets %}
+      {% if budgets_hidden %}<div class="hint">y {{ budgets_hidden }} presupuesto{{ 's' if budgets_hidden != 1 }} más en la app.</div>{% endif %}
+      <div class="hint">{{ budgets_note }}</div>
+      {% else %}
+      <span class="empty">No definiste presupuestos para este mes.</span>
+      {% endif %}
+    </div>
+
+    <div class="split2">
+      <div class="c sec12">
+        <div class="h3">Metas de ahorro</div>
+        {% for g in goals %}
+        <div class="goal">
+          <table><tr>
+            <td class="ring">{{ g.ring }}</td>
+            <td><div class="n">{{ g.name }}</div><div class="p">{{ g.progress }}</div><div class="s" style="color: {{ g.state_color }}">{{ g.state }}</div></td>
+          </tr></table>
+        </div>
+        {% endfor %}
+        {% if goals_hidden %}<div class="hint">y {{ goals_hidden }} meta{{ 's' if goals_hidden != 1 }} más en la app.</div>{% endif %}
+        {% if not goals %}<span class="empty">Aún no tienes metas de ahorro.</span>{% endif %}
+      </div>
+      <div class="c sec12">
+        <div class="h3">Tasa de ahorro · 6 meses</div>
+        <div class="ratebox">
+          {{ rate_chart }}
+          <table class="ratelabels"><tr>
+            {% for r in rate_labels %}<td>{{ r.label }}<br><strong>{{ r.value }}</strong></td>{% endfor %}
+          </tr></table>
+          <div class="hint">Línea punteada: meta sugerida del 20 %.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="outlook">
+      <div class="h3">{{ outlook_title }}</div>
+      <div class="tx">{{ outlook }}</div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <table><tr><td>Bolsillo · Reporte de {{ month_lower }} · Cálculos automáticos a partir de tus movimientos</td><td>Página 3 de 3</td></tr></table>
+  </div>
+</section>

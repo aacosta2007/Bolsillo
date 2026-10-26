@@ -1,0 +1,94 @@
+<section class="page d{{ density }}">
+  <div class="hero">
+    <div class="fx">
+      <div class="c"><span class="brand">Bolsillo</span></div>
+      <div class="c r gen">Generado el {{ generated }}</div>
+    </div>
+    <div class="kicker">{{ kicker }}</div>
+    <div class="hero-title">{{ title }}</div>
+    <div class="kpis">
+      {% for k in kpis %}
+      <div class="kpi">
+        <div class="kl">{{ k.label }}</div>
+        <div class="kv{% if k.value|length > 13 %} s{% elif k.value|length > 10 %} m{% endif %}">{{ k.value }}</div>
+        <div class="kd">{{ k.delta.icon }}{{ k.delta.text }}</div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="body1">
+    <div class="split1">
+      <div class="c">
+        <div class="h2">Lo más importante</div>
+        {% for i in insights %}
+        <div class="insight" style="background: {{ i.bg }}">
+          <table><tr><td class="ic">{{ i.icon }}</td><td class="tx">{{ i.text }}</td></tr></table>
+        </div>
+        {% endfor %}
+      </div>
+      <div class="c">
+        <div class="h2">¿A dónde fue el dinero?</div>
+        <div class="card">
+          {{ stacked }}
+          <div class="legend">
+            {% for c in legend %}<span><span class="swatch" style="background: {{ c.color }}"></span>{{ c.name }} {{ c.pct }}</span>{% endfor %}
+            {% if not legend %}<span class="muted" style="width: 100%">Sin gastos este mes</span>{% endif %}
+          </div>
+        </div>
+        {% if density < 3 %}
+        <div class="per100">
+          {% if spent_vs_saved.empty %}
+          <div class="lbl">Ingresos del mes</div>
+          <div class="vals"><span class="small">No registraste ingresos este mes.</span></div>
+          {% else %}
+          <div class="lbl">De cada $ 100 que recibiste</div>
+          <div class="vals">
+            <span class="big" style="color: #B33A0A">$ {{ spent_vs_saved.spent }}</span> <span class="small">gastaste</span>
+            {% if spent_vs_saved.deficit %}
+            <span class="big" style="color: #B33A0A">$ {{ -spent_vs_saved.saved }}</span> <span class="small">de más</span>
+            {% else %}
+            <span class="big" style="color: #0F5E55">$ {{ spent_vs_saved.saved }}</span> <span class="small">ahorraste</span>
+            {% endif %}
+          </div>
+          {% endif %}
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div>
+      <div class="sec-head">
+        <div class="l h2">Tus quincenas del mes</div>
+        <div class="rt">{{ periods_note }}</div>
+      </div>
+      <div class="periods">
+        {% for p in periods %}
+        <div class="period">
+          <div class="top"><span class="lab">{{ p.label }}</span><span class="chipcell"><span class="chip" style="background: {{ p.chip_bg }}; color: {{ p.chip_fg }}">{{ p.status }}</span></span></div>
+          <div class="rows">
+            <div><span class="k">Recibido</span><span class="v">{{ p.income }}</span></div>
+            <div><span class="k">Gastado</span><span class="v">{{ p.expense }}</span></div>
+            <div><span class="k">Por día</span><span class="v">{{ p.per_day }}</span></div>
+          </div>
+          <div class="track"><div style="width: {{ p.used }}%; background: {{ p.bar }}"></div></div>
+          <span class="net" style="color: {{ p.net_color }}">{{ p.net }}</span>
+        </div>
+        {% endfor %}
+        {% if not periods %}<span class="empty">Sin quincenas para este mes.</span>{% endif %}
+      </div>
+    </div>
+
+    <div>
+      <div class="sec-head">
+        <div class="l h2">Ingresos vs gastos · últimos 6 meses</div>
+        <div class="rt"><span class="swatch" style="background: #2563EB"></span> Ingresos &nbsp; <span class="swatch" style="background: #C2410C"></span> Gastos</div>
+      </div>
+      <div style="margin-top: 12px">{{ trend_chart }}</div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <table><tr><td>Bolsillo · Reporte de {{ month_lower }} · Cifras en {{ currency_note }}</td><td>Página 1 de 3</td></tr></table>
+  </div>
+</section>

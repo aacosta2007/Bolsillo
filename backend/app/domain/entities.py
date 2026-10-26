@@ -257,3 +257,28 @@ class TransactionFilters:
     category_id: UUID | None = None
     type: TransactionType | None = None
     q: str | None = None
+
+
+@dataclass(kw_only=True)
+class DailyTotal:
+    date: date
+    income: Decimal
+    expense: Decimal
+    paycheck_income: Decimal  # ingresos de reglas marcadas is_paycheck ese día
+
+
+@dataclass(kw_only=True)
+class TopExpense:
+    transaction_id: UUID
+    date: date
+    note: str | None
+    category: str | None
+    account: str
+    amount: Decimal
+
+
+@dataclass(kw_only=True)
+class ContributionTotals:
+    """Aportes de una meta: dentro de un rango y posteriores a su fin (para reconstruir el ahorro a fin de mes)."""
+    in_range: Decimal
+    after: Decimal

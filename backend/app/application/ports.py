@@ -8,6 +8,8 @@ from typing import Protocol
 from uuid import UUID
 from zoneinfo import ZoneInfo
 
+from app.domain.monthly_report import MonthlyReport
+
 
 class PasswordHasher(Protocol):
     def hash(self, password: str) -> str: ...
@@ -62,6 +64,12 @@ class NullPushSender:
 
     async def send(self, target: PushTarget, payload: dict) -> PushResult:
         return PushResult.FAILED
+
+
+class ReportRenderer(Protocol):
+    async def render(self, report: MonthlyReport) -> bytes:
+        """Genera el PDF (A4, 3 páginas) del reporte mensual."""
+        ...
 
 
 def today_in(tz_name: str) -> date:

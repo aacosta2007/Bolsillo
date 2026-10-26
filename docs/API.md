@@ -189,6 +189,44 @@ PayPeriod = {
 - `status`: en curso → `en_curso`; `net < 0` → `deficit`; `income = 0` o `net < 10 % de income` → `justo`; si no → `ahorro`. Si una regla de sueldo terminó (`end_date`) y no hay pago siguiente, el periodo en curso cierra el 15 o el fin de mes, lo que llegue primero.
 - `by_category`: gastos del periodo agrupados (igual que en dashboard).
 
+### Reporte mensual
+`GET /reports/monthly/{YYYY-MM}` → `MonthlyReport` (JSON) · `GET /reports/monthly/{YYYY-MM}.pdf` → `application/pdf`
+(`Content-Disposition: attachment; filename="bolsillo_reporte_YYYY-MM.pdf"`). Mes futuro → 400; formato inválido → 422.
+Se puede pedir el mes en curso (parcial: `is_partial = true`). "Mes anterior" = el mes calendario previo.
+
+```json
+MonthlyReport = {
+  "month": "2026-10", "is_partial": false, "generated_at": "2026-11-01T13:00:00Z", "currency": "COP",
+  "summary": {
+    "income": "2350000.00", "expense": "1684300.00", "net": "665700.00", "savings_rate": 28.3,
+    "prev": {"income": "2000000.00", "expense": "1590000.00", "net": "410000.00", "savings_rate": 20.5},
+    "income_change_pct": 17.5, "expense_change_pct": 5.9, "net_change_pct": 62.4
+  },
+  "expense_by_category": [{"category_id": "uuid", "name": "Comida", "color": "#0F5E55", "icon": "utensils",
+     "total": "452300.00", "prev_total": "383300.00", "change_pct": 18.0, "percent": 26.9, "count": 14}],
+  "income_by_category": [{"category_id": "uuid", "name": "Salario", "color": "#1D4ED8", "icon": "briefcase",
+     "total": "2000000.00", "prev_total": "2000000.00", "change_pct": 0.0, "percent": 85.1, "count": 2, "is_new": false}],
+  "top_expenses": [{"transaction_id": "uuid", "date": "2026-10-05", "note": "Arriendo", "category": "Hogar/Arriendo", "account": "Bancolombia", "amount": "700000.00"}],
+  "daily": [{"date": "2026-10-01", "expense": "12000.00", "income": "0.00", "is_payday": false}],
+  "daily_stats": {"max_day": "2026-10-05", "max_day_expense": "715000.00", "avg_daily_expense": "54332.26", "no_spend_days": 4},
+  "pay_periods": [PayPeriod],
+  "budgets": [BudgetStatus],
+  "budgets_summary": {"ok": 3, "warning": 1, "exceeded": 1},
+  "goals": [{"id": "uuid", "name": "Viaje a Cartagena", "color": "#0F5E55", "target_amount": "3000000.00", "saved": "1050000.00",
+     "percent": 35.0, "contributed_this_month": "300000.00", "monthly_needed": "275000.00", "status": "on_track|behind|completed|no_target_date"}],
+  "trend": [{"month": "2026-05", "income": "2000000.00", "expense": "1750000.00", "net": "250000.00", "savings_rate": 12.5}],
+  "insights": [{"kind": "category_up|category_down|savings_record|new_income|budget_exceeded|pay_period_short|no_spend_days|savings_rate", "tone": "positive|warning|neutral", "text": "Gastaste 18 % más en Comida que en septiembre ($ 69.000 más)."}]
+}
+```
+- Transferencias no cuentan como ingreso ni gasto. `change_pct` = (actual − anterior)/anterior × 100 con 1 decimal; `null` si anterior = 0 (en ingresos se marca `is_new = true` si anterior = 0 y actual > 0).
+- `expense_by_category` incluye categorías con gasto en el mes **o** en el mes anterior (una que bajó a 0 aparece con `change_pct = -100`), ordenadas por `total` desc. `percent` sobre el total del mes.
+- `top_expenses`: 5 gastos más grandes del mes. `daily`: un elemento por día del mes (hasta hoy si `is_partial`); `is_payday` si hay ingreso de una regla `is_paycheck` ese día. `avg_daily_expense` = gasto / días considerados.
+- `pay_periods`: quincenas de pago (ver arriba) que **se cruzan** con el mes, en orden cronológico.
+- `budgets`: presupuestos del mes con su estado. `goals`: metas con `contributed_this_month` (suma de aportes del mes); `status`: `completed` si saved ≥ target, `no_target_date` si no tiene fecha, `on_track` si contributed_this_month ≥ monthly_needed (o no se necesita), si no `behind`.
+- `trend`: 6 meses terminando en `month`.
+- `insights`: entre 2 y 6 observaciones **calculadas por reglas** (no IA), ordenadas por relevancia: categoría con mayor alza/baja (≥ 10 % y ≥ $ 20.000 de diferencia), récord de ahorro de los últimos 6 meses, ingreso nuevo, presupuestos excedidos, quincena más corta/larga o en déficit, días sin gasto, tasa de ahorro vs 20 %. Montos en pesos enteros con formato es-CO; nombres de mes en español.
+- **PDF**: A4 vertical, 3 páginas como el diseño `docs/design/v2/PDF1–3.dc.html` (1: portada con resumen, observaciones, a dónde fue el dinero, quincenas del mes, tendencia; 2: gastos por categoría con dona y tabla vs mes anterior, top 5, ingresos por fuente, gasto día a día; 3: presupuestos, metas, tasa de ahorro 6 meses y "Para el próximo mes"). Pie con "Página N de 3". Gráficas en SVG vectorial. Fuentes Bricolage Grotesque + Figtree embebidas.
+
 ## Exportar
 `GET /export/csv?from&to` → `text/csv; charset=utf-8` con BOM, separador `,`, columnas:
 `fecha,tipo,monto,cuenta,categoria,cuenta_destino,nota`. Header `Content-Disposition: attachment; filename="bolsillo_<from>_<to>.csv"`.

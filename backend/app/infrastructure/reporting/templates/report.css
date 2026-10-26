@@ -1,0 +1,176 @@
+/* Reporte mensual de Bolsillo: A4 vertical, 3 páginas. Tokens en docs/design/DESIGN.md.
+ *
+ * Nota de rendimiento: WeasyPrint relayouta los flex/grid anidados varias veces por nivel (un reporte
+ * tardaba más de un minuto). Aquí solo se usan bloques, flotantes y tablas de layout fijo
+ * (`table-layout: fixed`), que no necesitan calcular anchos de contenido: el PDF sale en un par de segundos. */
+@font-face { font-family: "Figtree"; font-weight: 400; src: url("fonts/Figtree-400.ttf") format("truetype"); }
+@font-face { font-family: "Figtree"; font-weight: 500; src: url("fonts/Figtree-500.ttf") format("truetype"); }
+@font-face { font-family: "Figtree"; font-weight: 600; src: url("fonts/Figtree-600.ttf") format("truetype"); }
+@font-face { font-family: "Figtree"; font-weight: 700; src: url("fonts/Figtree-700.ttf") format("truetype"); }
+@font-face { font-family: "Bricolage Grotesque"; font-weight: 500; src: url("fonts/BricolageGrotesque-500.ttf") format("truetype"); }
+@font-face { font-family: "Bricolage Grotesque"; font-weight: 700; src: url("fonts/BricolageGrotesque-700.ttf") format("truetype"); }
+
+@page { size: A4; margin: 0; }
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; background: #FFFFFF; }
+body { font-family: "Figtree", "DejaVu Sans", sans-serif; color: #16201B; font-size: 13px; line-height: 1.25; }
+strong { font-weight: 700; }
+svg { display: block; }
+svg.ico { display: inline-block; vertical-align: -1px; }
+
+/* Página: 794 x 1123 px a 96 dpi (un pelo menos de 297 mm para no generar una 4.ª hoja por redondeo). */
+.page { position: relative; width: 210mm; height: 296.5mm; overflow: hidden; background: #FFFFFF; }
+.page + .page { break-before: page; }
+.foot { position: absolute; left: 0; right: 0; bottom: 0; padding: 0 56px 28px; font-size: 11px; color: #7A857F; }
+.foot table { width: 100%; table-layout: fixed; border-collapse: collapse; }
+.foot td { padding: 0; vertical-align: top; }
+.foot td + td { width: 110px; text-align: right; }
+
+.fx { display: table; table-layout: fixed; width: 100%; border-collapse: collapse; }
+.fx > .c { display: table-cell; vertical-align: top; padding: 0; }
+.r { text-align: right; }
+.muted { color: #55615B; }
+
+.h2 { font-family: "Bricolage Grotesque", "Figtree", sans-serif; font-weight: 700; font-size: 18px; line-height: 1.2; }
+.h3 { font-family: "Bricolage Grotesque", "Figtree", sans-serif; font-weight: 700; font-size: 17px; line-height: 1.2; }
+.sec-head { display: table; table-layout: fixed; width: 100%; }
+.sec-head > .l { display: table-cell; vertical-align: baseline; }
+.sec-head > .rt { display: table-cell; vertical-align: baseline; text-align: right; width: 330px; font-size: 12px; color: #55615B; }
+.swatch { width: 9px; height: 9px; border-radius: 2px; display: inline-block; }
+
+/* ---- Página 1 ---- */
+.hero { background: #0F5E55; color: #FFFFFF; padding: 40px 56px 32px; }
+.brand { font-family: "Bricolage Grotesque", "Figtree", sans-serif; font-weight: 700; font-size: 20px; letter-spacing: 0.2px; }
+.gen { font-size: 12px; color: #CFE6E1; padding-top: 6px; }
+.kicker { margin-top: 18px; font-size: 14px; color: #CFE6E1; text-transform: uppercase; letter-spacing: 1.5px; }
+.hero-title { margin-top: 4px; font-family: "Bricolage Grotesque", "Figtree", sans-serif; font-weight: 700; font-size: 44px; letter-spacing: -0.5px; line-height: 1.15; }
+.kpis { display: table; table-layout: fixed; width: calc(100% + 24px); margin: 18px -12px 0; border-spacing: 12px 0; }
+.kpi { display: table-cell; vertical-align: top; background: rgba(255, 255, 255, 0.12); border-radius: 14px; padding: 14px; }
+.kpi .kl { font-size: 12px; color: #CFE6E1; }
+.kpi .kv { margin-top: 4px; font-family: "Bricolage Grotesque", "Figtree", sans-serif; font-weight: 700; font-size: 22px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.kpi .kv.m { font-size: 19px; }
+.kpi .kv.s { font-size: 16px; }
+.kpi .kd { margin-top: 4px; font-size: 12px; font-weight: 600; color: #FFFFFF; }
+
+.body1 { padding: 32px 56px 0; }
+.body1 > * + * { margin-top: 26px; }
+.split1 { display: table; table-layout: fixed; width: 100%; }
+.split1 > .c { display: table-cell; vertical-align: top; }
+.split1 > .c:first-child { width: 52.4%; padding-right: 12px; }
+.split1 > .c:last-child { padding-left: 12px; }
+.insight { margin-top: 12px; padding: 12px 14px; border-radius: 12px; }
+.insight table { width: 100%; table-layout: fixed; border-collapse: collapse; }
+.insight td { padding: 0; vertical-align: top; }
+.insight td.ic { width: 30px; padding-top: 3px; }
+.insight .tx { font-size: 13px; line-height: 1.45; color: #16201B; }
+.card { margin-top: 12px; padding: 16px; border: 1px solid #E2E7E3; border-radius: 14px; }
+.legend { padding-top: 6px; font-size: 12px; }
+.legend > span { display: inline-block; width: 50%; margin-top: 6px; white-space: nowrap; }
+.legend > span:nth-child(-n+2) { margin-top: 0; }
+.legend .swatch { margin-right: 6px; }
+.per100 { margin-top: 12px; padding: 16px; border-radius: 14px; background: #F4F6F3; }
+.per100 .lbl { font-size: 12px; color: #55615B; }
+.per100 .vals { margin-top: 6px; white-space: nowrap; }
+.per100 .big { font-family: "Bricolage Grotesque", "Figtree", sans-serif; font-weight: 700; font-size: 28px; }
+.per100 .small { font-size: 13px; color: #55615B; margin-right: 16px; }
+
+.periods { margin-top: 12px; }
+.periods::after { content: ""; display: block; clear: both; }
+.period { float: left; width: calc((100% - 25px) / 3); margin: 0 12px 12px 0; border: 1px solid #E2E7E3; border-radius: 14px; padding: 14px; }
+.period:nth-child(3n) { margin-right: 0; }
+.period .top { display: table; table-layout: fixed; width: 100%; }
+.period .top > span { display: table-cell; vertical-align: middle; }
+.period .top > .chipcell { width: 70px; text-align: right; }
+.period .lab { font-weight: 700; font-size: 14px; white-space: nowrap; }
+.chip { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+.period .rows { margin-top: 8px; font-size: 12px; }
+.period .rows > div { margin-top: 4px; overflow: hidden; }
+.period .rows > div:first-child { margin-top: 0; }
+.period .rows .k { color: #55615B; }
+.period .rows .v { float: right; font-weight: 600; font-variant-numeric: tabular-nums; }
+.track { margin-top: 8px; height: 8px; border-radius: 999px; background: #EEF1EE; }
+.track > div { height: 8px; border-radius: 999px; }
+.period .net { display: block; margin-top: 8px; font-size: 12px; font-weight: 700; }
+
+/* ---- Páginas 2 y 3 ---- */
+.ph { margin: 36px 56px 0; padding-bottom: 12px; border-bottom: 3px solid #0F5E55; display: table; table-layout: fixed; width: calc(100% - 112px); }
+.ph .t { display: table-cell; vertical-align: baseline; font-family: "Bricolage Grotesque", "Figtree", sans-serif; font-weight: 700; font-size: 24px; }
+.ph .m { display: table-cell; vertical-align: baseline; width: 140px; text-align: right; font-size: 12px; color: #55615B; }
+.body2, .body3 { padding: 24px 56px 0; }
+.body2 > * + * { margin-top: 26px; }
+.body3 > * + * { margin-top: 28px; }
+.sec > .h3 { margin-bottom: 10px; }
+.sec12 > .h3 { margin-bottom: 12px; }
+.catgrid { display: table; table-layout: fixed; width: 100%; }
+.catgrid > .c { display: table-cell; vertical-align: middle; }
+.catgrid > .c:first-child { width: 208px; padding-right: 28px; }
+table.cats { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: 13px; }
+table.cats th { color: #55615B; font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600; padding: 0 0 8px; text-align: right; }
+table.cats th:first-child { text-align: left; }
+table.cats td { padding: 8px 0; border-top: 1px solid #EEF1EE; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+table.cats td:first-child { text-align: left; overflow: hidden; text-overflow: ellipsis; }
+table.cats td.cur { font-weight: 700; }
+table.cats td.prev { color: #55615B; }
+table.cats td.delta { font-weight: 700; }
+table.cats .swatch { margin-right: 8px; }
+
+.split2 { display: table; table-layout: fixed; width: 100%; }
+.split2 > .c { display: table-cell; vertical-align: top; width: 50%; }
+.split2 > .c:first-child { padding-right: 12px; }
+.split2 > .c:last-child { padding-left: 12px; }
+.top-row { display: table; table-layout: fixed; width: 100%; border-bottom: 1px solid #EEF1EE; font-size: 13px; }
+.top-row > .c { display: table-cell; vertical-align: middle; padding: 8px 0; }
+.top-row > .rank { width: 32px; }
+.top-row .rk { width: 22px; height: 22px; border-radius: 6px; background: #F4F6F3; text-align: center; font-weight: 700; font-size: 11px; line-height: 22px; }
+.top-row .n { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.top-row .meta { font-size: 11px; color: #55615B; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.top-row > .amt { width: 92px; text-align: right; font-weight: 700; color: #B33A0A; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.sources { padding: 14px; border-radius: 14px; background: #F4F6F3; }
+.source + .source { margin-top: 12px; }
+.source .hd { overflow: hidden; font-size: 13px; }
+.source .hd .n { font-weight: 600; }
+.source .hd .a { float: right; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.source .bar { margin-top: 6px; height: 10px; border-radius: 999px; background: #FFFFFF; }
+.source .bar > div { height: 10px; border-radius: 999px; }
+.source .sub { display: block; margin-top: 6px; font-size: 11px; color: #55615B; }
+.source .sub.bold { font-weight: 700; }
+.more { margin-top: 10px; font-size: 11px; color: #55615B; }
+.empty { display: block; font-size: 12px; color: #7A857F; padding: 6px 0; }
+.facts { margin-top: 10px; font-size: 12px; color: #3D4843; }
+.facts > span { margin-right: 20px; white-space: nowrap; }
+
+.chips { text-align: right; white-space: nowrap; }
+.chips span { display: inline-block; margin-left: 8px; padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; white-space: nowrap; }
+.brow { display: table; table-layout: fixed; width: 100%; margin-top: 12px; font-size: 13px; }
+.brow > .c { display: table-cell; vertical-align: middle; }
+.brow > .n { width: 166px; padding-right: 16px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.brow > .bar { width: 306px; padding-right: 16px; }
+.brow > .d { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.hint { margin-top: 12px; font-size: 11px; color: #7A857F; }
+.goal { margin-top: 12px; padding: 12px 14px; border: 1px solid #E2E7E3; border-radius: 14px; }
+.goal table { width: 100%; table-layout: fixed; border-collapse: collapse; }
+.goal td { padding: 0; vertical-align: middle; }
+.goal td.ring { width: 70px; }
+.goal .n { font-weight: 700; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.goal .p { margin-top: 2px; font-size: 12px; color: #3D4843; }
+.goal .s { margin-top: 2px; font-size: 12px; font-weight: 700; }
+.ratebox { padding: 16px; border-radius: 14px; background: #F4F6F3; }
+.ratelabels { margin-top: 10px; width: 100%; table-layout: fixed; border-collapse: collapse; font-size: 11px; color: #55615B; text-align: center; }
+.ratelabels td { padding: 0; }
+.ratelabels strong { color: #16201B; }
+.ratebox .hint { margin-top: 10px; }
+.outlook { padding: 20px 22px; border-radius: 16px; background: #0F5E55; color: #FFFFFF; }
+.outlook .h3 { color: #FFFFFF; }
+.outlook .tx { margin-top: 8px; font-size: 13px; line-height: 1.55; color: #E3F0ED; }
+
+/* ---- Página 1 más densa: d1 = 5-6 observaciones o más de 3 quincenas; d2 y d3 si aun así no cabe ---- */
+.d1 .hero, .d2 .hero, .d3 .hero { padding: 32px 56px 24px; }
+.d1 .body1, .d2 .body1, .d3 .body1 { padding-top: 22px; }
+.d1 .body1 > * + *, .d2 .body1 > * + *, .d3 .body1 > * + * { margin-top: 18px; }
+.d1 .insight, .d2 .insight, .d3 .insight { margin-top: 10px; padding: 7px 14px; }
+.d1 .insight .tx, .d2 .insight .tx, .d3 .insight .tx { font-size: 12.5px; line-height: 1.4; }
+.d1 .card, .d2 .card, .d3 .card, .d1 .per100, .d2 .per100, .d1 .periods, .d2 .periods, .d3 .periods { margin-top: 10px; }
+.d2 .period .rows > div:nth-child(3), .d3 .period .rows > div:nth-child(3) { display: none; }
+.d2 .period, .d3 .period { padding: 10px 12px; margin-bottom: 8px; }
+.d2 .period .net, .d3 .period .net, .d2 .track, .d3 .track { margin-top: 6px; }
