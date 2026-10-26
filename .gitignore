@@ -24,3 +24,6 @@ backups/
 .DS_Store
 .vscode/
 .idea/
+
+# PDF de muestra del reporte mensual (se regenera con `python -m app.cli sample-report`)
+backend/muestra*.pdf

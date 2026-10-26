@@ -1,0 +1,82 @@
+<section class="page">
+  <div class="ph"><span class="t">Gastos e ingresos</span><span class="m">{{ title }}</span></div>
+
+  <div class="body2">
+    <div class="sec">
+      <div class="h3">Gastos por categoría</div>
+      {% if cats %}
+      <div class="catgrid">
+        <div class="c">{{ donut }}</div>
+        <div class="c">
+          <table class="cats">
+            <colgroup><col><col style="width: 92px"><col style="width: 92px"><col style="width: 78px"></colgroup>
+            <thead><tr><th>Categoría</th><th>{{ cur_label }}</th><th>{{ prev_label }}</th><th>Cambio</th></tr></thead>
+            <tbody>
+              {% for c in cats %}
+              <tr>
+                <td><span class="swatch" style="background: {{ c.color }}"></span>{{ c.name }}</td>
+                <td class="cur">{{ c.total }}</td>
+                <td class="prev">{{ c.prev }}</td>
+                <td class="delta" style="color: {{ c.delta.color }}">{{ c.delta.icon }}{{ c.delta.text }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      {% else %}
+      <span class="empty">No registraste gastos en {{ cur_label|lower }} ni en {{ prev_label|lower }}.</span>
+      {% endif %}
+    </div>
+
+    <div class="split2">
+      <div class="c">
+        <div class="h3" style="margin-bottom: 10px">Los 5 gastos más grandes</div>
+        {% for t in top_expenses %}
+        <div class="top-row">
+          <div class="c rank"><div class="rk">{{ t.rank }}</div></div>
+          <div class="c"><div class="n">{{ t.note }}</div><div class="meta">{{ t.meta }}</div></div>
+          <div class="c amt">{{ t.amount }}</div>
+        </div>
+        {% endfor %}
+        {% if not top_expenses %}<span class="empty">Sin gastos este mes.</span>{% endif %}
+      </div>
+      <div class="c">
+        <div class="h3" style="margin-bottom: 10px">Ingresos por fuente</div>
+        {% if sources %}
+        <div class="sources">
+          {% for s in sources %}
+          <div class="source">
+            <div class="hd"><span class="a">{{ s.total }}</span><span class="n">{{ s.name }}</span></div>
+            <div class="bar"><div style="width: {{ s.width }}%; background: {{ s.color }}"></div></div>
+            <span class="sub{% if s.sub.bold %} bold{% endif %}" style="color: {{ s.sub.color }}">{{ s.sub.icon }}{{ s.sub.text }}</span>
+          </div>
+          {% endfor %}
+          {% if sources_hidden %}<div class="more">y {{ sources_hidden }} fuente{{ 's' if sources_hidden != 1 }} más</div>{% endif %}
+        </div>
+        {% else %}
+        <span class="empty">No registraste ingresos este mes.</span>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-head" style="margin-bottom: 10px">
+        <div class="l h3">Gasto día a día</div>
+        <div class="rt">Las barras azules son días de pago de quincena</div>
+      </div>
+      {{ daily_chart }}
+      <div class="facts">
+        {% if daily_facts.peak %}
+        <span>Día de más gasto: <strong>{{ daily_facts.peak.when }}</strong>{% if daily_facts.peak.what %} ({{ daily_facts.peak.what|lower }}){% endif %}</span>
+        {% endif %}
+        <span>Promedio diario: <strong>{{ daily_facts.avg }}</strong></span>
+        <span>Días sin gastos: <strong>{{ daily_facts.no_spend }}</strong></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <table><tr><td>Bolsillo · Reporte de {{ month_lower }}</td><td>Página 2 de 3</td></tr></table>
+  </div>
+</section>

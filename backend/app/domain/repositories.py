@@ -12,6 +12,8 @@ from app.domain.entities import (
     Category,
     CategoryTotal,
     Contribution,
+    ContributionTotals,
+    DailyTotal,
     ExportRow,
     Goal,
     MonthlyTotal,
@@ -20,6 +22,7 @@ from app.domain.entities import (
     RecurringRule,
     RefreshToken,
     Transaction,
+    TopExpense,
     TransactionFilters,
     User,
 )
@@ -83,6 +86,12 @@ class TransactionRepository(Protocol):
     async def monthly_totals(self, user_id: UUID, start: date, end: date) -> list[MonthlyTotal]: ...
     async def recent(self, user_id: UUID, limit: int) -> list[Transaction]: ...
     async def export_rows(self, user_id: UUID, start: date, end: date) -> list[ExportRow]: ...
+    async def daily_totals(self, user_id: UUID, start: date, end: date) -> list[DailyTotal]:
+        """Un elemento por día con movimiento (sin transferencias), con el ingreso de sueldo aparte."""
+        ...
+    async def top_expenses(
+        self, user_id: UUID, start: date, end: date, limit: int
+    ) -> list[TopExpense]: ...
 
 
 class BudgetRepository(Protocol):
@@ -117,6 +126,9 @@ class GoalRepository(Protocol):
     ) -> Contribution | None: ...
     async def add_contribution(self, c: Contribution) -> Contribution: ...
     async def delete_contribution(self, user_id: UUID, id: UUID) -> None: ...
+    async def contribution_totals(
+        self, user_id: UUID, start: date, end: date
+    ) -> dict[UUID, ContributionTotals]: ...
 
 
 class NotificationRepository(Protocol):

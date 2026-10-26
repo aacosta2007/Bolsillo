@@ -1,4 +1,4 @@
-"""CLI: python -m app.cli create-user --email X --password Y | python -m app.cli gen-vapid"""
+"""CLI: python -m app.cli create-user --email X --password Y | gen-vapid | sample-report --out muestra.pdf"""
 import argparse
 import asyncio
 import sys
@@ -36,6 +36,9 @@ def main() -> int:
     cu.add_argument("--password", required=True)
     cu.add_argument("--display-name")
     sub.add_parser("gen-vapid", help="Genera un par de claves VAPID para Web Push")
+    sr = sub.add_parser("sample-report", help="Genera un PDF del reporte mensual con datos de ejemplo (sin BD)")
+    sr.add_argument("--out", default="muestra.pdf", help="Ruta del PDF de salida")
+    sr.add_argument("--html", help="Opcional: guarda también el HTML intermedio")
     args = parser.parse_args()
     if args.command == "gen-vapid":
         from app.infrastructure.push.vapid import generate_vapid_keys
@@ -43,6 +46,20 @@ def main() -> int:
         public, private = generate_vapid_keys()
         print(f"VAPID_PUBLIC_KEY={public}")
         print(f"VAPID_PRIVATE_KEY={private}")
+        return 0
+    if args.command == "sample-report":
+        from pathlib import Path
+
+        from app.infrastructure.reporting.sample import sample_report
+        from app.infrastructure.reporting.weasy_renderer import WeasyReportRenderer
+
+        renderer = WeasyReportRenderer()
+        report = sample_report()
+        if args.html:
+            Path(args.html).write_text(renderer.render_html(report), encoding="utf-8")
+        pdf = renderer.render_sync(report)
+        Path(args.out).write_bytes(pdf)
+        print(f"PDF de ejemplo: {args.out} ({len(pdf) // 1024} KB)")
         return 0
     try:
         asyncio.run(create_user(args.email, args.password, args.display_name))

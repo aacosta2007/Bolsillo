@@ -30,3 +30,22 @@ def short_date(d: date) -> str:
 def format_percent(value: float) -> str:
     """85.4 -> "85 %" (espacio fino no, espacio normal como pide el contrato)."""
     return f"{int(Decimal(str(value)).quantize(Decimal('1'), rounding=ROUND_HALF_UP))} %"
+
+
+def format_percent1(value: float) -> str:
+    """17.5 -> "17,5 %"; 62.0 -> "62 %" (coma decimal es-CO, un decimal como máximo)."""
+    v = Decimal(str(value)).quantize(Decimal("0.1"), rounding=ROUND_HALF_UP)
+    text = f"{v:f}".replace(".", ",")
+    if text.endswith(",0"):
+        text = text[:-2]
+    return f"{text} %"
+
+
+def long_date(d: date) -> str:
+    """1 de noviembre de 2026"""
+    return f"{d.day} de {MONTHS_ES[d.month - 1]} de {d.year}"
+
+
+def month_year(d: date) -> str:
+    """octubre 2026 -> "Octubre 2026" (para titulares)."""
+    return f"{MONTHS_ES[d.month - 1].capitalize()} {d.year}"

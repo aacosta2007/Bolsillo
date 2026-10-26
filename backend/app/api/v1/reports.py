@@ -1,12 +1,14 @@
 from dataclasses import asdict
 from datetime import date
+from typing import Annotated
 
-from fastapi import APIRouter, Query, Response
+from fastapi import APIRouter, Path, Query, Response
 
-from app.api.deps import CurrentUser, ReportSvc
+from app.api.deps import CurrentUser, MonthlyReportSvc, ReportRendererDep, ReportSvc, parse_month
 from app.api.schemas import (
     CategoryReportCountOut,
     DashboardOut,
+    MonthlyReportOut,
     PayPeriodOut,
     TrendNetOut,
 )
@@ -47,6 +49,32 @@ async def monthly_trend(user: CurrentUser, svc: ReportSvc, months: int = Query(d
 @router.get("/reports/pay-periods", response_model=list[PayPeriodOut])
 async def pay_periods(user: CurrentUser, svc: ReportSvc, count: int = Query(default=6, ge=1, le=24)):
     return await svc.pay_periods(user.id, count)
+
+
+MonthPath = Annotated[str, Path(pattern=r"^[1-9]\d{3}-(0[1-9]|1[0-2])$", description="YYYY-MM")]
+
+
+# El .pdf se declara antes que la ruta JSON: `{month}` aceptaría "2026-10.pdf" si fuera primero.
+@router.get(
+    "/reports/monthly/{month}.pdf",
+    responses={200: {"content": {"application/pdf": {}}, "description": "PDF A4 de 3 páginas"}},
+    response_class=Response,
+)
+async def monthly_report_pdf(
+    month: MonthPath, user: CurrentUser, svc: MonthlyReportSvc, renderer: ReportRendererDep
+):
+    report = await svc.build(user.id, parse_month(month))
+    pdf = await renderer.render(report)
+    return Response(
+        content=pdf,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="bolsillo_reporte_{month}.pdf"'},
+    )
+
+
+@router.get("/reports/monthly/{month}", response_model=MonthlyReportOut)
+async def monthly_report(month: MonthPath, user: CurrentUser, svc: MonthlyReportSvc):
+    return await svc.build(user.id, parse_month(month))
 
 
 @router.get("/export/csv")

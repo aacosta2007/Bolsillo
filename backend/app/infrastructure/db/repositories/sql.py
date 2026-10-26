@@ -15,6 +15,8 @@ from app.domain.entities import (
     Category,
     CategoryTotal,
     Contribution,
+    ContributionTotals,
+    DailyTotal,
     ExportRow,
     Goal,
     MonthlyTotal,
@@ -22,6 +24,7 @@ from app.domain.entities import (
     PushSubscription,
     RecurringRule,
     RefreshToken,
+    TopExpense,
     Transaction,
     TransactionFilters,
     User,
@@ -317,6 +320,43 @@ class SqlTransactionRepository(SqlRepo[Transaction]):
             for r in (await self.session.execute(stmt)).all()
         ]
 
+    async def daily_totals(self, user_id: UUID, start: date, end: date) -> list[DailyTotal]:
+        rule = aliased(RecurringRuleModel)
+        stmt = (
+            select(
+                T.date,
+                func.sum(case((T.type == "income", T.amount), else_=0)),
+                func.sum(case((T.type == "expense", T.amount), else_=0)),
+                func.sum(case((and_(T.type == "income", rule.is_paycheck.is_(True)), T.amount), else_=0)),
+            )
+            .outerjoin(rule, rule.id == T.recurring_id)
+            .where(T.user_id == user_id, T.type != "transfer", T.date >= start, T.date <= end)
+            .group_by(T.date)
+            .order_by(T.date)
+        )
+        return [
+            DailyTotal(date=r[0], income=_dec(r[1]), expense=_dec(r[2]), paycheck_income=_dec(r[3]))
+            for r in (await self.session.execute(stmt)).all()
+        ]
+
+    async def top_expenses(
+        self, user_id: UUID, start: date, end: date, limit: int
+    ) -> list[TopExpense]:
+        stmt = (
+            select(T.id, T.date, T.note, CategoryModel.name, AccountModel.name, T.amount)
+            .join(AccountModel, AccountModel.id == T.account_id)
+            .outerjoin(CategoryModel, CategoryModel.id == T.category_id)
+            .where(T.user_id == user_id, T.type == "expense", T.date >= start, T.date <= end)
+            .order_by(T.amount.desc(), T.date, T.created_at, T.id)
+            .limit(limit)
+        )
+        return [
+            TopExpense(
+                transaction_id=r[0], date=r[1], note=r[2], category=r[3], account=r[4], amount=_dec(r[5])
+            )
+            for r in (await self.session.execute(stmt)).all()
+        ]
+
 
 class SqlBudgetRepository(SqlRepo[Budget]):
     model = BudgetModel
@@ -444,6 +484,24 @@ class SqlGoalRepository(SqlRepo[Goal]):
             )
         )
         await self.session.flush()
+
+    async def contribution_totals(
+        self, user_id: UUID, start: date, end: date
+    ) -> dict[UUID, ContributionTotals]:
+        G = GoalContributionModel
+        stmt = (
+            select(
+                G.goal_id,
+                func.sum(case((and_(G.date >= start, G.date <= end), G.amount), else_=0)),
+                func.sum(case((G.date > end, G.amount), else_=0)),
+            )
+            .where(G.user_id == user_id)
+            .group_by(G.goal_id)
+        )
+        return {
+            r[0]: ContributionTotals(in_range=_dec(r[1]), after=_dec(r[2]))
+            for r in (await self.session.execute(stmt)).all()
+        }
 
 
 class SqlNotificationRepository(SqlRepo[Notification]):

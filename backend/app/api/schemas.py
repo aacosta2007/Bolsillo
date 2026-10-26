@@ -454,6 +454,118 @@ class DashboardOut(BaseModel):
     next_payday: NextPaydayOut | None
 
 
+# ---------- Reporte mensual ----------
+class PeriodTotalsOut(ORM):
+    income: Money
+    expense: Money
+    net: Money
+    savings_rate: float
+
+
+class MonthlySummaryOut(ORM):
+    income: Money
+    expense: Money
+    net: Money
+    savings_rate: float
+    prev: PeriodTotalsOut
+    income_change_pct: float | None
+    expense_change_pct: float | None
+    net_change_pct: float | None
+
+
+class ExpenseCategoryChangeOut(ORM):
+    category_id: UUID
+    name: str
+    color: str
+    icon: str
+    total: Money
+    prev_total: Money
+    change_pct: float | None
+    percent: float
+    count: int
+
+
+class IncomeCategoryChangeOut(ExpenseCategoryChangeOut):
+    is_new: bool
+
+
+class TopExpenseOut(ORM):
+    transaction_id: UUID
+    date: Date
+    note: str | None
+    category: str | None
+    account: str
+    amount: Money
+
+
+class DailyOut(ORM):
+    date: Date
+    expense: Money
+    income: Money
+    is_payday: bool
+
+
+class DailyStatsOut(ORM):
+    max_day: Date | None
+    max_day_expense: Money
+    avg_daily_expense: Money
+    no_spend_days: int
+
+
+class BudgetsSummaryOut(ORM):
+    ok: int
+    warning: int
+    exceeded: int
+
+
+class ReportGoalOut(ORM):
+    id: UUID
+    name: str
+    color: str
+    target_amount: Money
+    saved: Money
+    percent: float
+    contributed_this_month: Money
+    monthly_needed: Money | None
+    status: Literal["on_track", "behind", "completed", "no_target_date"]
+
+
+class ReportTrendOut(ORM):
+    month: str
+    income: Money
+    expense: Money
+    net: Money
+    savings_rate: float
+
+
+class InsightOut(ORM):
+    kind: Literal[
+        "category_up", "category_down", "savings_record", "new_income",
+        "budget_exceeded", "pay_period_short", "no_spend_days", "savings_rate",
+    ]
+    tone: Literal["positive", "warning", "neutral"]
+    text: str
+
+
+class MonthlyReportOut(ORM):
+    month: MonthStr
+    is_partial: bool
+    generated_at: datetime
+    currency: str
+    summary: MonthlySummaryOut
+    expense_by_category: list[ExpenseCategoryChangeOut]
+    income_by_category: list[IncomeCategoryChangeOut]
+    top_expenses: list[TopExpenseOut]
+    daily: list[DailyOut]
+    daily_stats: DailyStatsOut
+    pay_periods: list[PayPeriodOut]
+    budgets: list[BudgetStatusOut]
+    budgets_summary: BudgetsSummaryOut
+    goals: list[ReportGoalOut]
+    trend: list[ReportTrendOut]
+    insights: list[InsightOut]
+
+
 # ---------- Notificaciones ----------
 class NotificationOut(ORM):
     id: UUID

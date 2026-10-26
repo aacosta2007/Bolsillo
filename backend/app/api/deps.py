@@ -14,7 +14,8 @@ from app.application.categories import CategoryService
 from app.application.goals import GoalService
 from app.application.notification_triggers import NotificationTriggers
 from app.application.notifications import NotificationService
-from app.application.ports import PushSender
+from app.application.monthly_report import MonthlyReportService
+from app.application.ports import PushSender, ReportRenderer
 from app.application.recurring import RecurringService
 from app.application.reports import ReportService
 from app.application.transactions import TransactionService
@@ -102,6 +103,20 @@ RecurringSvc = Annotated[
 ]
 GoalSvc = Annotated[GoalService, Depends(lambda uow=Depends(get_uow): GoalService(uow))]
 ReportSvc = Annotated[ReportService, Depends(lambda uow=Depends(get_uow): ReportService(uow))]
+
+MonthlyReportSvc = Annotated[
+    MonthlyReportService, Depends(lambda uow=Depends(get_uow): MonthlyReportService(uow))
+]
+
+
+def get_report_renderer() -> ReportRenderer:
+    """Dependencia sobreescribible en tests (app.dependency_overrides)."""
+    from app.infrastructure.reporting import build_report_renderer
+
+    return build_report_renderer()
+
+
+ReportRendererDep = Annotated[ReportRenderer, Depends(get_report_renderer)]
 
 
 PushSenderDep = Annotated[PushSender, Depends(get_push_sender)]

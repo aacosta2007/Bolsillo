@@ -111,6 +111,15 @@ class ReportService:
             rows.append(TrendRow(month=m.strftime("%Y-%m"), income=inc, expense=exp, net=inc - exp))
         return rows
 
+    async def trend(self, user_id: UUID, months: int, end_month: date) -> list[TrendRow]:
+        return await self._trend(user_id, months, end_month)
+
+    async def today(self, user_id: UUID) -> date:
+        return await self._today(user_id)
+
+    async def period(self, user_id: UUID, span: PeriodSpan, today: date) -> PayPeriod:
+        return await self._period(user_id, span, today)
+
     async def by_category(
         self, user_id: UUID, start: date, end: date, type: TransactionType
     ) -> list[CategoryReportRow]:

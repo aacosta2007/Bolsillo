@@ -37,6 +37,14 @@ python -m app.cli gen-vapid          # imprime VAPID_PUBLIC_KEY / VAPID_PRIVATE_
 - Puerto `PushSender` (`application/ports.py`); implementaciones: `WebPushSender` (pywebpush en un hilo, TTL 24 h; 404/410 borra la suscripción) y `NullPushSender` (sin claves VAPID: solo bandeja).
 - Los fallos de push o de avisos se registran en log y nunca rompen la petición del usuario. En tests se inyecta un sender falso con `app.dependency_overrides[get_push_sender]`.
 
+## Reporte mensual (JSON + PDF)
+
+- `MonthlyReportService` (`application/monthly_report.py`) arma el contrato de `GET /reports/monthly/{YYYY-MM}` reutilizando `ReportService` (tendencia, quincenas de pago), `BudgetService` y los repositorios; las métricas y las observaciones por reglas (`domain/insights.py`, `domain/monthly_report.py`) son puras.
+- El PDF (`GET /reports/monthly/{YYYY-MM}.pdf`) lo genera el puerto `ReportRenderer` (`application/ports.py`); el adaptador es `infrastructure/reporting/weasy_renderer.py` (Jinja2 + WeasyPrint, A4 de 3 páginas, gráficas SVG de `charts.py`, fuentes Figtree y Bricolage Grotesque en `reporting/fonts/`, licencia OFL).
+- WeasyPrint necesita Pango/HarfBuzz en el sistema: ya están en el `Dockerfile`. En Windows suelen faltar, así que las pruebas que generan PDF se saltan solas (`tests/pdf_support.py`) y corren dentro del contenedor.
+- Diseño: `python -m app.cli sample-report --out muestra.pdf` genera un PDF con datos de ejemplo (sin BD) para revisarlo (en Docker: `docker run --rm -v "$PWD":/out --entrypoint python bolsillo-api -m app.cli sample-report --out /out/muestra.pdf`).
+- Rendimiento: las plantillas evitan flex/grid anidados (WeasyPrint los relayouta varias veces por nivel y tardaba más de un minuto); se usan bloques, flotantes y tablas de layout fijo. Si la página 1 no cabe, el renderer la compacta (`density` 0-3) en lugar de recortarla.
+
 ## Tests
 
 Requiere una MariaDB de pruebas:
@@ -47,7 +55,7 @@ docker run -d --name bolsillo-test-db -e MARIADB_ROOT_PASSWORD=test -e MARIADB_D
   --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --default-time-zone=+00:00
 pip install -r requirements-dev.txt
 pytest                      # unit (repos fake) + integración (API contra MariaDB)
-pytest tests/unit           # solo unitarios, sin BD
+pytest tests/unit           # solo unitarios, sin BD (los de PDF se saltan sin Pango)
 docker rm -f bolsillo-test-db
 ```
 
