@@ -192,3 +192,43 @@ PayPeriod = {
 ## Exportar
 `GET /export/csv?from&to` → `text/csv; charset=utf-8` con BOM, separador `,`, columnas:
 `fecha,tipo,monto,cuenta,categoria,cuenta_destino,nota`. Header `Content-Disposition: attachment; filename="bolsillo_<from>_<to>.csv"`.
+
+## Notificaciones
+Web Push estándar (VAPID). El servidor guarda cada aviso en la bandeja (`notifications`) y, si el usuario tiene suscripciones push y el tipo está activado, lo envía cifrado a cada dispositivo. La bandeja funciona aunque push falle o esté desactivado.
+
+| Método | Ruta | Body | Respuesta |
+|---|---|---|---|
+| GET | `/notifications/vapid-public-key` | — | `200 {"public_key": "BL...base64url"}` (`503` si el servidor no tiene claves VAPID) |
+| POST | `/notifications/subscriptions` | `{"endpoint", "keys": {"p256dh", "auth"}, "device"?: "Android Chrome"}` | `201 Subscription` (upsert por `endpoint`) |
+| DELETE | `/notifications/subscriptions?endpoint=...` | — | `204` |
+| GET | `/notifications?unread_only=false&page=1&page_size=30` | — | `200 Page<Notification> + "unread_count"` (más recientes primero) |
+| POST | `/notifications/{id}/read` | — | `204` |
+| POST | `/notifications/read-all` | — | `204` |
+| GET | `/notifications/preferences` | — | `200 Preferences` |
+| PATCH | `/notifications/preferences` | campos de `Preferences` | `200 Preferences` |
+| POST | `/notifications/test` | — | `200 {"sent": 1, "failed": 0}` (crea un aviso de prueba y lo envía) |
+
+```json
+Notification = {"id": "uuid", "kind": "budget_warning|budget_exceeded|upcoming_recurring|payday|monthly_report|test",
+  "title": "Comida llegó al 85 %", "body": "Te quedan $ 90.000 de tu presupuesto para 11 días.",
+  "url": "/presupuestos", "read": false, "created_at": "..."}
+Preferences = {"budget_alerts": true, "upcoming_alerts": true, "upcoming_days_before": 1, "payday_alerts": true,
+  "monthly_report_alerts": true, "notify_hour": 8}
+Subscription = {"id": "uuid", "endpoint": "https://fcm.googleapis.com/...", "device": "Android Chrome", "created_at": "..."}
+```
+- `upcoming_days_before`: 0–7 (0 = el mismo día). `notify_hour`: 0–23, hora local del usuario.
+- **Payload push** (JSON cifrado): `{"title", "body", "url", "tag": "<kind>:<dedupe_key>", "notification_id"}`. El service worker muestra la notificación con icono de la app y al tocarla abre/enfoca `url`.
+- **Deduplicación**: cada aviso tiene `dedupe_key` única por usuario; si ya existe no se crea ni se envía de nuevo.
+
+**Disparadores**
+| kind | Cuándo | dedupe_key | Texto (ejemplo) |
+|---|---|---|---|
+| `budget_warning` / `budget_exceeded` | Justo después de crear/editar un **gasto** (y en el job diario como respaldo) cuando un presupuesto del mes cruza el umbral o se excede | `budget:<budget_id>:<YYYY-MM>:<warning\|exceeded>` | "Comida llegó al 85 %" / "Entretenimiento excedido: te pasaste por $ 20.000" |
+| `upcoming_recurring` | Job diario a `notify_hour`: ocurrencias de recurrentes activos (gasto **e** ingreso que no sea sueldo) con fecha efectiva = hoy + `upcoming_days_before` | `upcoming:<rule_id>:<fecha>` | "Mañana: Arriendo $ 1.200.000 desde Bancolombia" |
+| `payday` | Cuando el job de recurrentes genera un movimiento de una regla `is_paycheck` | `payday:<rule_id>:<fecha>` | "Llegó tu quincena: $ 1.000.000. Puedes gastar ≈ $ 66.600 por día hasta el 29 oct" (usa `available_per_day` de la quincena actual) |
+| `monthly_report` | Job diario a `notify_hour` el día 1 | `report:<YYYY-MM del mes anterior>` | "Tu reporte de octubre está listo" (`url` = `/reportes?tab=mes&mes=YYYY-MM`) |
+| `test` | `POST /notifications/test` | `test:<timestamp>` | "Bolsillo: aviso de prueba" |
+
+- Un tipo desactivado en preferencias no crea aviso. Montos con formato es-CO (`$ 1.234.500`, pesos enteros).
+- Si el servicio push responde 404/410 la suscripción se elimina. Otros errores se registran en log y no fallan la petición del usuario.
+- Configuración del servidor: `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` (`mailto:...`). Se generan con `python -m app.cli gen-vapid`. Sin claves, la app funciona y solo se usa la bandeja.

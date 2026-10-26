@@ -1,4 +1,4 @@
-"""CLI: python -m app.cli create-user --email X --password Y"""
+"""CLI: python -m app.cli create-user --email X --password Y | python -m app.cli gen-vapid"""
 import argparse
 import asyncio
 import sys
@@ -35,7 +35,15 @@ def main() -> int:
     cu.add_argument("--email", required=True)
     cu.add_argument("--password", required=True)
     cu.add_argument("--display-name")
+    sub.add_parser("gen-vapid", help="Genera un par de claves VAPID para Web Push")
     args = parser.parse_args()
+    if args.command == "gen-vapid":
+        from app.infrastructure.push.vapid import generate_vapid_keys
+
+        public, private = generate_vapid_keys()
+        print(f"VAPID_PUBLIC_KEY={public}")
+        print(f"VAPID_PRIVATE_KEY={private}")
+        return 0
     try:
         asyncio.run(create_user(args.email, args.password, args.display_name))
     except DomainError as exc:

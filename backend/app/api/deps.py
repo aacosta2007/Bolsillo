@@ -12,6 +12,9 @@ from app.application.auth import AuthConfig, AuthService
 from app.application.budgets import BudgetService
 from app.application.categories import CategoryService
 from app.application.goals import GoalService
+from app.application.notification_triggers import NotificationTriggers
+from app.application.notifications import NotificationService
+from app.application.ports import PushSender
 from app.application.recurring import RecurringService
 from app.application.reports import ReportService
 from app.application.transactions import TransactionService
@@ -21,6 +24,7 @@ from app.domain.exceptions import AuthenticationError
 from app.domain.rules import first_of_month
 from app.infrastructure.db.session import get_sessionmaker
 from app.infrastructure.db.unit_of_work import SqlAlchemyUnitOfWork
+from app.infrastructure.push import get_push_sender as _build_push_sender
 from app.infrastructure.rate_limit import LoginRateLimiter
 from app.infrastructure.security.passwords import Argon2PasswordHasher
 from app.infrastructure.security.tokens import JwtTokenService
@@ -48,6 +52,11 @@ def get_rate_limiter() -> LoginRateLimiter:
 async def get_uow() -> AsyncIterator[SqlAlchemyUnitOfWork]:
     async with SqlAlchemyUnitOfWork(get_sessionmaker()) as uow:
         yield uow
+
+
+def get_push_sender() -> PushSender:
+    """Dependencia sobreescribible en tests (app.dependency_overrides)."""
+    return _build_push_sender()
 
 
 UowDep = Annotated[SqlAlchemyUnitOfWork, Depends(get_uow)]
@@ -93,6 +102,23 @@ RecurringSvc = Annotated[
 ]
 GoalSvc = Annotated[GoalService, Depends(lambda uow=Depends(get_uow): GoalService(uow))]
 ReportSvc = Annotated[ReportService, Depends(lambda uow=Depends(get_uow): ReportService(uow))]
+
+
+PushSenderDep = Annotated[PushSender, Depends(get_push_sender)]
+
+
+def get_notification_service(uow: UowDep, sender: PushSenderDep) -> NotificationService:
+    return NotificationService(uow, sender)
+
+
+NotificationSvc = Annotated[NotificationService, Depends(get_notification_service)]
+
+
+def get_notification_triggers(uow: UowDep, notifier: NotificationSvc) -> NotificationTriggers:
+    return NotificationTriggers(uow, notifier)
+
+
+NotificationTriggersDep = Annotated[NotificationTriggers, Depends(get_notification_triggers)]
 
 
 def parse_month(value: str) -> date:

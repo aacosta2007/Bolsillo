@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import logging
+from dataclasses import dataclass
 from datetime import date, timedelta
+from decimal import Decimal
 from typing import Callable
 from uuid import UUID
 
-from app.application.ports import today_in
+from app.application.ports import PushSender, today_in
 from app.domain.entities import RecurringRule, Transaction, UpcomingItem, utcnow
 from app.domain.enums import CategoryKind, Frequency, TransactionType, WeekendAdjust
 from app.domain.exceptions import BusinessRuleError, NotFoundError
@@ -29,9 +31,19 @@ NULLABLE_FIELDS = ("end_date", "note", "days_of_month")
 MAX_WEEKEND_SHIFT = 2  # el ajuste de fin de semana adelanta la fecha como máximo 2 días
 
 
+@dataclass(frozen=True)
+class GeneratedPaycheck:
+    """Movimiento de sueldo generado por `run` (para avisar al usuario)."""
+
+    rule_id: UUID
+    date: date
+    amount: Decimal
+
+
 class RecurringService:
     def __init__(self, uow: UnitOfWork):
         self.uow = uow
+        self.paychecks: list[GeneratedPaycheck] = []  # sueldos generados en la última `run`
 
     async def list(self, user_id: UUID) -> list[RecurringRule]:
         return await self.uow.recurring.list(user_id)
@@ -138,6 +150,7 @@ class RecurringService:
         bloquean (FOR UPDATE) y next_run_date avanza en la misma transacción.
         next_run_date es la fecha nominal; el movimiento y end_date usan la fecha efectiva."""
         created = 0
+        self.paychecks = []
         for rule in await self.uow.recurring.lock_due(user_id, today):
             n = 0
             while n < MAX_PER_RULE:
@@ -156,6 +169,8 @@ class RecurringService:
                         recurring_id=rule.id,
                     )
                 )
+                if rule.is_paycheck:
+                    self.paychecks.append(GeneratedPaycheck(rule.id, due, rule.amount))
                 rule.next_run_date = self._advance(rule)
                 n += 1
             if rule.end_date is not None and effective_date(rule.next_run_date, rule.weekend_adjust) > rule.end_date:
@@ -194,15 +209,26 @@ class RecurringService:
         return items
 
 
-async def run_pending_for_all_users(uow_factory: Callable[[], UnitOfWork]) -> int:
-    """Ejecuta los recurrentes pendientes de todos los usuarios (job diario y arranque)."""
+async def run_pending_for_all_users(
+    uow_factory: Callable[[], UnitOfWork], sender: PushSender | None = None
+) -> int:
+    """Ejecuta los recurrentes pendientes de todos los usuarios (job diario y arranque).
+    Con `sender`, avisa (bandeja + push) de los sueldos generados."""
     async with uow_factory() as uow:
         users = await uow.users.list_all()
     total = 0
     for user in users:
         try:
             async with uow_factory() as uow:
-                total += await RecurringService(uow).run(user.id, today_in(user.timezone))
+                svc = RecurringService(uow)
+                total += await svc.run(user.id, today_in(user.timezone))
+                if sender is not None and svc.paychecks:
+                    from app.application.notification_triggers import NotificationTriggers
+                    from app.application.notifications import NotificationService
+
+                    await NotificationTriggers(uow, NotificationService(uow, sender)).paychecks_generated(
+                        user, svc.paychecks
+                    )
         except Exception:  # un usuario con error no debe frenar a los demás
             log.exception("Fallo ejecutando recurrentes del usuario %s", user.id)
     if total:

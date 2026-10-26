@@ -452,3 +452,63 @@ class DashboardOut(BaseModel):
     current_pay_period: PayPeriodOut | None
     previous_pay_period: PayPeriodOut | None
     next_payday: NextPaydayOut | None
+
+
+# ---------- Notificaciones ----------
+class NotificationOut(ORM):
+    id: UUID
+    kind: str
+    title: str
+    body: str
+    url: str
+    read: bool
+    created_at: datetime
+
+
+class NotificationPage(Page[NotificationOut]):
+    unread_count: int
+
+
+class PreferencesOut(ORM):
+    budget_alerts: bool
+    upcoming_alerts: bool
+    upcoming_days_before: int
+    payday_alerts: bool
+    monthly_report_alerts: bool
+    notify_hour: int
+
+
+class PreferencesUpdate(UpdateBase):
+    budget_alerts: bool | None = None
+    upcoming_alerts: bool | None = None
+    upcoming_days_before: int | None = Field(default=None, ge=0, le=7)
+    payday_alerts: bool | None = None
+    monthly_report_alerts: bool | None = None
+    notify_hour: int | None = Field(default=None, ge=0, le=23)
+
+
+class PushKeys(BaseModel):
+    p256dh: str = Field(min_length=1, max_length=255)
+    auth: str = Field(min_length=1, max_length=255)
+
+
+class SubscriptionIn(BaseModel):
+    endpoint: str = Field(min_length=1, max_length=500, pattern=r"^https://")
+    keys: PushKeys
+    device: str | None = Field(default=None, max_length=100)
+
+
+class SubscriptionOut(ORM):
+    id: UUID
+    endpoint: str
+    device: str | None
+    created_at: datetime
+
+
+class VapidKeyOut(BaseModel):
+    public_key: str
+
+
+class TestResult(BaseModel):
+    sent: int
+    failed: int

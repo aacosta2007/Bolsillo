@@ -2,7 +2,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Query, Response
 
-from app.api.deps import CurrentUser, RecurringSvc
+from app.api.deps import CurrentUser, NotificationTriggersDep, RecurringSvc
 from app.api.schemas import (
     RecurringCreate,
     RecurringOut,
@@ -26,8 +26,11 @@ async def create_rule(body: RecurringCreate, user: CurrentUser, svc: RecurringSv
 
 
 @router.post("/run", response_model=RunResult)
-async def run_rules(user: CurrentUser, svc: RecurringSvc):
-    return RunResult(created=await svc.run(user.id, today_in(user.timezone)))
+async def run_rules(user: CurrentUser, svc: RecurringSvc, triggers: NotificationTriggersDep):
+    created = await svc.run(user.id, today_in(user.timezone))
+    if svc.paychecks:
+        await triggers.paychecks_generated(user, svc.paychecks)  # aviso "payday"; nunca falla la petición
+    return RunResult(created=created)
 
 
 @router.get("/upcoming", response_model=list[UpcomingOut])

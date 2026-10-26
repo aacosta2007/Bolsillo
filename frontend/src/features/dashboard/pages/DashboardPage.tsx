@@ -4,6 +4,7 @@ import { daysLeftInMonth, monthLabel, shortDate, todayISO } from '@/shared/lib/d
 import { formatMoney } from '@/shared/lib/money';
 import { Card, CardHeader, EmptyState, ErrorState, IconButton, ListSkeleton, Money, Skeleton } from '@/shared/ui';
 import { useAuth } from '@/features/auth/AuthContext';
+import { NotificationBell } from '@/features/notifications/components/NotificationBell';
 import { useLookups } from '@/features/transactions/lookups';
 import { TransactionRow } from '@/features/transactions/components/TransactionRow';
 import { useDashboardSummary } from '../hooks';
@@ -32,9 +33,12 @@ export function DashboardPage() {
           <span className="text-sm text-muted">{user?.display_name ? `Hola, ${user.display_name}` : 'Hola de nuevo'}</span>
           <span className="font-display text-[22px] font-bold">{monthLabel(month)}</span>
         </div>
-        <IconButton label="Ajustes" onClick={() => navigate('/ajustes')}>
-          <Settings size={20} aria-hidden="true" />
-        </IconButton>
+        <div className="flex items-center gap-2">
+          <NotificationBell />
+          <IconButton label="Ajustes" onClick={() => navigate('/ajustes')}>
+            <Settings size={20} aria-hidden="true" />
+          </IconButton>
+        </div>
       </header>
 
       {q.isLoading && (

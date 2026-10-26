@@ -5,6 +5,7 @@ from datetime import date, datetime, timedelta
 from decimal import Decimal
 from uuid import UUID
 
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy import and_, case, delete, func, literal, or_, select, union_all, update
 from sqlalchemy.orm import aliased
 
@@ -17,18 +18,23 @@ from app.domain.entities import (
     ExportRow,
     Goal,
     MonthlyTotal,
+    Notification,
+    PushSubscription,
     RecurringRule,
     RefreshToken,
     Transaction,
     TransactionFilters,
     User,
 )
+from app.domain.entities import utcnow
 from app.domain.enums import CategoryKind, TransactionType
 from app.infrastructure.db.models import (
     AccountModel,
     BudgetModel,
     CategoryModel,
     GoalContributionModel,
+    NotificationModel,
+    PushSubscriptionModel,
     RecurringRuleModel,
     RefreshTokenModel,
     SavingsGoalModel,
@@ -438,3 +444,87 @@ class SqlGoalRepository(SqlRepo[Goal]):
             )
         )
         await self.session.flush()
+
+
+class SqlNotificationRepository(SqlRepo[Notification]):
+    model = NotificationModel
+    entity = Notification
+
+    async def try_add(self, n: Notification) -> bool:
+        try:
+            async with self.session.begin_nested():  # savepoint: un duplicado no invalida la transacción
+                self.session.add(NotificationModel(**self.values(n)))
+                await self.session.flush()
+        except IntegrityError:
+            return False
+        return True
+
+    async def list(
+        self, user_id: UUID, unread_only: bool, page: int, page_size: int
+    ) -> tuple[list[Notification], int]:
+        N = NotificationModel
+        conds = [N.user_id == user_id]
+        if unread_only:
+            conds.append(N.read.is_(False))
+        total = int(await self.session.scalar(select(func.count()).select_from(N).where(*conds)) or 0)
+        stmt = (
+            select(N).where(*conds)
+            .order_by(N.created_at.desc(), N.id)
+            .limit(page_size).offset((page - 1) * page_size)
+        )
+        return [self.to_entity(r) for r in await self.session.scalars(stmt)], total
+
+    async def unread_count(self, user_id: UUID) -> int:
+        N = NotificationModel
+        return int(
+            await self.session.scalar(
+                select(func.count()).select_from(N).where(N.user_id == user_id, N.read.is_(False))
+            ) or 0
+        )
+
+    async def mark_read(self, user_id: UUID, id: UUID) -> None:
+        N = NotificationModel
+        await self.session.execute(
+            update(N).where(N.user_id == user_id, N.id == id).values(read=True)
+        )
+
+    async def mark_all_read(self, user_id: UUID) -> None:
+        N = NotificationModel
+        await self.session.execute(
+            update(N).where(N.user_id == user_id, N.read.is_(False)).values(read=True)
+        )
+
+
+class SqlPushSubscriptionRepository(SqlRepo[PushSubscription]):
+    model = PushSubscriptionModel
+    entity = PushSubscription
+
+    async def upsert(self, sub: PushSubscription) -> PushSubscription:
+        P = PushSubscriptionModel
+        orm = await self.session.scalar(select(P).where(P.endpoint == sub.endpoint))
+        if orm is None:
+            self.session.add(P(**self.values(sub)))
+            await self.session.flush()
+            return sub
+        orm.user_id = sub.user_id  # el mismo dispositivo puede cambiar de usuario
+        orm.p256dh = sub.p256dh
+        orm.auth = sub.auth
+        orm.device = sub.device
+        orm.updated_at = utcnow()
+        await self.session.flush()
+        return self.to_entity(orm)
+
+    async def list_for_user(self, user_id: UUID) -> list[PushSubscription]:
+        P = PushSubscriptionModel
+        rows = await self.session.scalars(
+            select(P).where(P.user_id == user_id).order_by(P.created_at, P.id)
+        )
+        return [self.to_entity(r) for r in rows]
+
+    async def delete_by_endpoint(self, user_id: UUID, endpoint: str) -> None:
+        P = PushSubscriptionModel
+        await self.session.execute(delete(P).where(P.user_id == user_id, P.endpoint == endpoint))
+
+    async def delete(self, id: UUID) -> None:  # type: ignore[override]
+        P = PushSubscriptionModel
+        await self.session.execute(delete(P).where(P.id == id))

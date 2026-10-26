@@ -28,6 +28,13 @@ class User:
     display_name: str | None = None
     currency: str = "COP"
     timezone: str = "America/Bogota"
+    # Preferencias de notificaciones
+    budget_alerts: bool = True
+    upcoming_alerts: bool = True
+    upcoming_days_before: int = 1  # 0-7 (0 = el mismo día)
+    payday_alerts: bool = True
+    monthly_report_alerts: bool = True
+    notify_hour: int = 8  # 0-23, hora local del usuario
     id: UUID = field(default_factory=uuid4)
     created_at: datetime = field(default_factory=utcnow)
     updated_at: datetime = field(default_factory=utcnow)
@@ -183,6 +190,31 @@ class Contribution:
     amount: Decimal
     date: date
     note: str | None = None
+    id: UUID = field(default_factory=uuid4)
+    created_at: datetime = field(default_factory=utcnow)
+    updated_at: datetime = field(default_factory=utcnow)
+
+
+@dataclass(kw_only=True)
+class Notification:
+    user_id: UUID
+    kind: str
+    title: str
+    body: str
+    dedupe_key: str
+    url: str = "/"
+    read: bool = False
+    id: UUID = field(default_factory=uuid4)
+    created_at: datetime = field(default_factory=utcnow)
+
+
+@dataclass(kw_only=True)
+class PushSubscription:
+    user_id: UUID
+    endpoint: str
+    p256dh: str
+    auth: str
+    device: str | None = None
     id: UUID = field(default_factory=uuid4)
     created_at: datetime = field(default_factory=utcnow)
     updated_at: datetime = field(default_factory=utcnow)

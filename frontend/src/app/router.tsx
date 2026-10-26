@@ -7,6 +7,7 @@ import { TransactionFormPage } from '@/features/transactions/pages/TransactionFo
 import { BudgetsPage } from '@/features/budgets/pages/BudgetsPage';
 import { ReportsPage } from '@/features/reports/pages/ReportsPage';
 import { GoalsPage } from '@/features/goals/pages/GoalsPage';
+import { NotificationsPage } from '@/features/notifications/pages/NotificationsPage';
 import { SettingsPage } from '@/features/settings/pages/SettingsPage';
 
 export const routes = [
@@ -22,6 +23,7 @@ export const routes = [
           { path: '/presupuestos', element: <BudgetsPage /> },
           { path: '/reportes', element: <ReportsPage /> },
           { path: '/metas', element: <GoalsPage /> },
+          { path: '/avisos', element: <NotificationsPage /> },
           { path: '/ajustes', element: <SettingsPage /> },
         ],
       },
