@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, KeyRound, LogOut } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Bell, ChevronLeft, ChevronRight, KeyRound, LogOut } from 'lucide-react';
 import { Button, Card, IconButton } from '@/shared/ui';
 import { useAuth } from '@/features/auth/AuthContext';
 import { AccountsSection } from '@/features/accounts/components/AccountsSection';
@@ -22,6 +22,17 @@ export function SettingsPage() {
         </IconButton>
         <h1 className="font-display text-[26px] font-bold">Ajustes</h1>
       </header>
+
+      <Link to="/avisos" className="flex min-h-[56px] items-center gap-3 rounded-card bg-surface px-[18px] py-3">
+        <span aria-hidden="true" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-primary-tint text-primary">
+          <Bell size={18} />
+        </span>
+        <span className="flex min-w-0 flex-1 flex-col">
+          <span className="text-sm font-semibold">Avisos</span>
+          <span className="text-xs text-muted">Bandeja y notificaciones en tu celular</span>
+        </span>
+        <ChevronRight size={18} aria-hidden="true" className="text-muted" />
+      </Link>
 
       <ProfileSection />
       <AccountsSection />

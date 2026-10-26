@@ -1,6 +1,16 @@
 from fastapi import APIRouter
 
-from app.api.v1 import accounts, auth, budgets, categories, goals, recurring, reports, transactions
+from app.api.v1 import (
+    accounts,
+    auth,
+    budgets,
+    categories,
+    goals,
+    notifications,
+    recurring,
+    reports,
+    transactions,
+)
 
 api_router = APIRouter()
 
@@ -10,5 +20,5 @@ async def health():
     return {"status": "ok"}
 
 
-for module in (auth, accounts, categories, transactions, budgets, recurring, goals, reports):
+for module in (auth, accounts, categories, transactions, budgets, recurring, goals, reports, notifications):
     api_router.include_router(module.router)

@@ -3,7 +3,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Query, Response
 
-from app.api.deps import CurrentUser, TransactionSvc
+from app.api.deps import CurrentUser, NotificationTriggersDep, TransactionSvc
 from app.api.schemas import Page, TransactionCreate, TransactionOut, TransactionUpdate
 from app.domain.entities import TransactionFilters
 from app.domain.enums import TransactionType
@@ -33,8 +33,12 @@ async def list_transactions(
 
 
 @router.post("", response_model=TransactionOut, status_code=201)
-async def create_transaction(body: TransactionCreate, user: CurrentUser, svc: TransactionSvc):
-    return await svc.create(user.id, body.model_dump())
+async def create_transaction(
+    body: TransactionCreate, user: CurrentUser, svc: TransactionSvc, triggers: NotificationTriggersDep
+):
+    tx = await svc.create(user.id, body.model_dump())
+    await triggers.after_transaction(user, tx)  # avisos de presupuesto; nunca falla la petición
+    return tx
 
 
 @router.get("/{id}", response_model=TransactionOut)
@@ -44,9 +48,12 @@ async def get_transaction(id: UUID, user: CurrentUser, svc: TransactionSvc):
 
 @router.patch("/{id}", response_model=TransactionOut)
 async def update_transaction(
-    id: UUID, body: TransactionUpdate, user: CurrentUser, svc: TransactionSvc
+    id: UUID, body: TransactionUpdate, user: CurrentUser, svc: TransactionSvc,
+    triggers: NotificationTriggersDep,
 ):
-    return await svc.update(user.id, id, body.changes())
+    tx = await svc.update(user.id, id, body.changes())
+    await triggers.after_transaction(user, tx)
+    return tx
 
 
 @router.delete("/{id}", status_code=204)

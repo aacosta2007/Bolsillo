@@ -15,6 +15,8 @@ from app.domain.entities import (
     ExportRow,
     Goal,
     MonthlyTotal,
+    Notification,
+    PushSubscription,
     RecurringRule,
     RefreshToken,
     Transaction,
@@ -117,6 +119,28 @@ class GoalRepository(Protocol):
     async def delete_contribution(self, user_id: UUID, id: UUID) -> None: ...
 
 
+class NotificationRepository(Protocol):
+    async def try_add(self, n: Notification) -> bool:
+        """Inserta; False si ya existe (user_id, dedupe_key)."""
+        ...
+    async def get(self, user_id: UUID, id: UUID) -> Notification | None: ...
+    async def list(
+        self, user_id: UUID, unread_only: bool, page: int, page_size: int
+    ) -> tuple[list[Notification], int]: ...
+    async def unread_count(self, user_id: UUID) -> int: ...
+    async def mark_read(self, user_id: UUID, id: UUID) -> None: ...
+    async def mark_all_read(self, user_id: UUID) -> None: ...
+
+
+class PushSubscriptionRepository(Protocol):
+    async def upsert(self, sub: PushSubscription) -> PushSubscription:
+        """Por endpoint (único global): si existe se actualiza y se reasigna al usuario."""
+        ...
+    async def list_for_user(self, user_id: UUID) -> list[PushSubscription]: ...
+    async def delete_by_endpoint(self, user_id: UUID, endpoint: str) -> None: ...
+    async def delete(self, id: UUID) -> None: ...
+
+
 class UnitOfWork(Protocol):
     users: UserRepository
     tokens: RefreshTokenRepository
@@ -126,6 +150,8 @@ class UnitOfWork(Protocol):
     budgets: BudgetRepository
     recurring: RecurringRepository
     goals: GoalRepository
+    notifications: NotificationRepository
+    push_subscriptions: PushSubscriptionRepository
 
     async def commit(self) -> None: ...
     async def rollback(self) -> None: ...

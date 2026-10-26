@@ -21,6 +21,10 @@ class Settings(BaseSettings):
     cors_origins: str = ""
     login_max_failures: int = 5
     login_window_seconds: int = 300
+    # Web Push (VAPID). Opcionales: sin claves solo se usa la bandeja. Ver `python -m app.cli gen-vapid`.
+    vapid_public_key: str = ""
+    vapid_private_key: str = ""
+    vapid_subject: str = ""  # mailto:... (si falta se usa uno por defecto)
 
     @property
     def cors_origin_list(self) -> list[str]:

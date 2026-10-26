@@ -1,7 +1,9 @@
+import { useEffect } from 'react';
 import { NavLink, Navigate, Outlet, useLocation } from 'react-router-dom';
 import { ChartNoAxesColumn, CircleDot, Home, ListTodo, Plus, Target, type LucideIcon } from 'lucide-react';
 import { useAuth } from '@/features/auth/AuthContext';
 import { cn } from '@/shared/ui';
+import { resyncPush } from '@/features/notifications/push';
 
 /** Contenedor mobile-first: ancho máx. 480px centrado en escritorio. */
 export function Shell({ children }: { children: React.ReactNode }) {
@@ -53,6 +55,10 @@ export function BottomNav() {
 
 /** Rutas privadas con navegación inferior. */
 export function AppLayout() {
+  // Re-registra en el servidor la suscripción push de este celular (silencioso, solo si ya hay permiso)
+  useEffect(() => {
+    void resyncPush();
+  }, []);
   return (
     <Shell>
       <main className="flex-1 overflow-y-auto">

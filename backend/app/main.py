@@ -14,6 +14,7 @@ from app.core.config import get_settings
 from app.core.logging import setup_logging
 from app.infrastructure.db.session import dispose_engine, get_sessionmaker
 from app.infrastructure.db.unit_of_work import SqlAlchemyUnitOfWork
+from app.infrastructure.push import get_push_sender
 from app.infrastructure.scheduler import build_scheduler, uow_factory
 from app.infrastructure.security.passwords import Argon2PasswordHasher
 from app.infrastructure.security.tokens import JwtTokenService
@@ -47,7 +48,7 @@ async def lifespan(app: FastAPI):
     except Exception:
         log.exception("No se pudo crear el usuario inicial")
     try:
-        await run_pending_for_all_users(uow_factory)
+        await run_pending_for_all_users(uow_factory, get_push_sender())
     except Exception:
         log.exception("Fallo ejecutando recurrentes al arrancar")
     scheduler.start()

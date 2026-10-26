@@ -10,3 +10,4 @@ PyJWT==2.15.1
 APScheduler==3.11.3
 python-dateutil==2.9.0.post0
 tzdata==2026.5
+pywebpush==2.5.0

@@ -7,6 +7,8 @@ from app.infrastructure.db.repositories.sql import (
     SqlBudgetRepository,
     SqlCategoryRepository,
     SqlGoalRepository,
+    SqlNotificationRepository,
+    SqlPushSubscriptionRepository,
     SqlRecurringRepository,
     SqlRefreshTokenRepository,
     SqlTransactionRepository,
@@ -28,6 +30,8 @@ class SqlAlchemyUnitOfWork:
         self.budgets = SqlBudgetRepository(self.session)
         self.recurring = SqlRecurringRepository(self.session)
         self.goals = SqlGoalRepository(self.session)
+        self.notifications = SqlNotificationRepository(self.session)
+        self.push_subscriptions = SqlPushSubscriptionRepository(self.session)
         return self
 
     async def __aexit__(self, exc_type, exc, tb) -> None:

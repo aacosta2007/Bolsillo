@@ -12,10 +12,13 @@ from app.domain.entities import (
     Category,
     Contribution,
     Goal,
+    Notification,
+    PushSubscription,
     RecurringRule,
     Transaction,
     User,
 )
+from app.application.ports import PushResult, PushTarget
 
 
 class _Repo:
@@ -56,6 +59,7 @@ class FakeUsers:
         return u
 
     async def update(self, u):
+        self.items[u.id] = u
         return u
 
     async def count(self):
@@ -98,6 +102,14 @@ class FakeTransactions(_Repo):
             if t.type.value == "expense" and start <= t.date <= end:
                 out[t.category_id] = out.get(t.category_id, Decimal("0.00")) + t.amount
         return out
+
+    async def list(self, user_id, filters, page, page_size):
+        out = [
+            t for t in self._all(user_id)
+            if (filters.date_from is None or t.date >= filters.date_from)
+            and (filters.date_to is None or t.date <= filters.date_to)
+        ]
+        return out, len(out)
 
     def all(self) -> list[Transaction]:
         return list(self.items.values())
@@ -156,6 +168,77 @@ class FakeGoals(_Repo):
         self.contribs.pop(id, None)
 
 
+class FakeNotifications:
+    def __init__(self):
+        self.items: list[Notification] = []
+
+    async def try_add(self, n):
+        if any(i.user_id == n.user_id and i.dedupe_key == n.dedupe_key for i in self.items):
+            return False
+        self.items.append(copy(n))
+        return True
+
+    async def get(self, user_id, id):
+        return next((i for i in self.items if i.id == id and i.user_id == user_id), None)
+
+    async def list(self, user_id, unread_only, page, page_size):
+        rows = [i for i in reversed(self.items) if i.user_id == user_id and (not unread_only or not i.read)]
+        return rows[(page - 1) * page_size: page * page_size], len(rows)
+
+    async def unread_count(self, user_id):
+        return sum(1 for i in self.items if i.user_id == user_id and not i.read)
+
+    async def mark_read(self, user_id, id):
+        for i in self.items:
+            if i.id == id and i.user_id == user_id:
+                i.read = True
+
+    async def mark_all_read(self, user_id):
+        for i in self.items:
+            if i.user_id == user_id:
+                i.read = True
+
+
+class FakePushSubscriptions:
+    def __init__(self):
+        self.items: dict[str, PushSubscription] = {}
+
+    async def upsert(self, sub):
+        old = self.items.get(sub.endpoint)
+        if old:
+            old.user_id, old.p256dh, old.auth, old.device = sub.user_id, sub.p256dh, sub.auth, sub.device
+            return old
+        self.items[sub.endpoint] = copy(sub)
+        return sub
+
+    async def list_for_user(self, user_id):
+        return [copy(s) for s in self.items.values() if s.user_id == user_id]
+
+    async def delete_by_endpoint(self, user_id, endpoint):
+        s = self.items.get(endpoint)
+        if s and s.user_id == user_id:
+            del self.items[endpoint]
+
+    async def delete(self, id):
+        for k, v in list(self.items.items()):
+            if v.id == id:
+                del self.items[k]
+
+
+class FakePushSender:
+    """Registra los envíos; `results` define la respuesta por endpoint (por defecto OK)."""
+
+    enabled = True
+
+    def __init__(self, results: dict | None = None):
+        self.sent: list[tuple[PushTarget, dict]] = []
+        self.results = results or {}
+
+    async def send(self, target, payload):
+        self.sent.append((target, payload))
+        return self.results.get(target.endpoint, PushResult.OK)
+
+
 class FakeUoW:
     def __init__(self):
         self.users = FakeUsers()
@@ -165,6 +248,8 @@ class FakeUoW:
         self.budgets = FakeBudgets()
         self.recurring = FakeRecurring()
         self.goals = FakeGoals()
+        self.notifications = FakeNotifications()
+        self.push_subscriptions = FakePushSubscriptions()
         self.commits = 0
 
     async def commit(self):

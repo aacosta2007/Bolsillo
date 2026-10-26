@@ -21,6 +21,7 @@ from sqlalchemy import (
     func,
     text,
 )
+from sqlalchemy.dialects import mysql
 from sqlalchemy.types import TypeDecorator
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
@@ -54,6 +55,13 @@ class UTCDateTime(TypeDecorator):
         return value.replace(tzinfo=timezone.utc)
 
 
+class UTCDateTimeMs(UTCDateTime):
+    """Como UTCDateTime pero con microsegundos (DATETIME(6)): orden estable de la bandeja."""
+
+    impl = DateTime(timezone=False).with_variant(mysql.DATETIME(fsp=6), "mysql", "mariadb")
+    cache_ok = True
+
+
 class Base(DeclarativeBase):
     metadata = MetaData(naming_convention=NAMING)
 
@@ -84,8 +92,31 @@ class UserModel(Base):
     display_name: Mapped[str | None] = mapped_column(String(100))
     currency: Mapped[str] = mapped_column(String(3), nullable=False, default="COP")
     timezone: Mapped[str] = mapped_column(String(64), nullable=False, default="America/Bogota")
+    # Preferencias de notificaciones
+    budget_alerts: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=True, server_default=text("1")
+    )
+    upcoming_alerts: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=True, server_default=text("1")
+    )
+    upcoming_days_before: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=1, server_default=text("1")
+    )
+    payday_alerts: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=True, server_default=text("1")
+    )
+    monthly_report_alerts: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=True, server_default=text("1")
+    )
+    notify_hour: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=8, server_default=text("8")
+    )
     created_at: Mapped[datetime] = _created()
     updated_at: Mapped[datetime] = _updated()
+    __table_args__ = (
+        CheckConstraint("upcoming_days_before BETWEEN 0 AND 7", name="upcoming_days_range"),
+        CheckConstraint("notify_hour BETWEEN 0 AND 23", name="notify_hour_range"),
+    )
 
 
 class RefreshTokenModel(Base):
@@ -277,3 +308,35 @@ class GoalContributionModel(Base):
         Index("ix_goal_contributions_goal_date", "goal_id", "date"),
         Index("ix_goal_contributions_user_id", "user_id"),
     )
+
+
+class NotificationModel(Base):
+    __tablename__ = "notifications"
+    id: Mapped[UUID] = _id()
+    user_id: Mapped[UUID] = _user_fk()
+    kind: Mapped[str] = mapped_column(String(30), nullable=False)
+    title: Mapped[str] = mapped_column(String(200), nullable=False)
+    body: Mapped[str] = mapped_column(String(500), nullable=False)
+    url: Mapped[str] = mapped_column(String(255), nullable=False, default="/", server_default="/")
+    dedupe_key: Mapped[str] = mapped_column(String(150), nullable=False)
+    read: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default=text("0"))
+    created_at: Mapped[datetime] = mapped_column(
+        UTCDateTimeMs(), server_default=text("CURRENT_TIMESTAMP(6)"), nullable=False
+    )
+    __table_args__ = (
+        UniqueConstraint("user_id", "dedupe_key", name="uq_notifications_user_dedupe"),
+        Index("ix_notifications_user_created", "user_id", "created_at"),
+    )
+
+
+class PushSubscriptionModel(Base):
+    __tablename__ = "push_subscriptions"
+    id: Mapped[UUID] = _id()
+    user_id: Mapped[UUID] = _user_fk()
+    endpoint: Mapped[str] = mapped_column(String(500), nullable=False, unique=True)
+    p256dh: Mapped[str] = mapped_column(String(255), nullable=False)
+    auth: Mapped[str] = mapped_column(String(255), nullable=False)
+    device: Mapped[str | None] = mapped_column(String(100))
+    created_at: Mapped[datetime] = _created()
+    updated_at: Mapped[datetime] = _updated()
+    __table_args__ = (Index("ix_push_subscriptions_user_id", "user_id"),)

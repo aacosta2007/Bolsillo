@@ -37,3 +37,12 @@ class BudgetState(StrEnum):
     OK = "ok"
     WARNING = "warning"
     EXCEEDED = "exceeded"
+
+
+class NotificationKind(StrEnum):
+    BUDGET_WARNING = "budget_warning"
+    BUDGET_EXCEEDED = "budget_exceeded"
+    UPCOMING_RECURRING = "upcoming_recurring"
+    PAYDAY = "payday"
+    MONTHLY_REPORT = "monthly_report"
+    TEST = "test"
