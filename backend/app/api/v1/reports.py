@@ -7,6 +7,7 @@ from app.api.deps import CurrentUser, ReportSvc
 from app.api.schemas import (
     CategoryReportCountOut,
     DashboardOut,
+    PayPeriodOut,
     TrendNetOut,
 )
 from app.domain.enums import TransactionType
@@ -41,6 +42,11 @@ async def by_category(
 @router.get("/reports/monthly-trend", response_model=list[TrendNetOut])
 async def monthly_trend(user: CurrentUser, svc: ReportSvc, months: int = Query(default=12, ge=1, le=60)):
     return await svc.monthly_trend(user.id, months)
+
+
+@router.get("/reports/pay-periods", response_model=list[PayPeriodOut])
+async def pay_periods(user: CurrentUser, svc: ReportSvc, count: int = Query(default=6, ge=1, le=24)):
+    return await svc.pay_periods(user.id, count)
 
 
 @router.get("/export/csv")

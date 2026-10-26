@@ -5,6 +5,7 @@ import { DashboardPage } from '@/features/dashboard/pages/DashboardPage';
 import { TransactionsPage } from '@/features/transactions/pages/TransactionsPage';
 import { TransactionFormPage } from '@/features/transactions/pages/TransactionFormPage';
 import { BudgetsPage } from '@/features/budgets/pages/BudgetsPage';
+import { ReportsPage } from '@/features/reports/pages/ReportsPage';
 import { GoalsPage } from '@/features/goals/pages/GoalsPage';
 import { SettingsPage } from '@/features/settings/pages/SettingsPage';
 
@@ -19,6 +20,7 @@ export const routes = [
           { path: '/', element: <DashboardPage /> },
           { path: '/movimientos', element: <TransactionsPage /> },
           { path: '/presupuestos', element: <BudgetsPage /> },
+          { path: '/reportes', element: <ReportsPage /> },
           { path: '/metas', element: <GoalsPage /> },
           { path: '/ajustes', element: <SettingsPage /> },
         ],

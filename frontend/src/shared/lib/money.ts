@@ -45,6 +45,14 @@ export function formatSigned(type: TxKind, value: string | number): string {
   return body;
 }
 
+/** Como formatMoney pero redondeado a pesos enteros (half-up): para promedios como "$ 23.627/día". */
+export function formatMoneyWhole(value: string | number | null | undefined): string {
+  const c = toCents(value);
+  const abs = c < 0n ? -c : c;
+  const pesos = (abs + 50n) / 100n;
+  return formatMoney(`${c < 0n ? '-' : ''}${pesos}`);
+}
+
 export function toCents(value: string | number | null | undefined): bigint {
   const { negative, int, cents } = parseMoney(value);
   const n = BigInt(int) * 100n + BigInt(cents);

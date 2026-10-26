@@ -1,5 +1,5 @@
 import { NavLink, Navigate, Outlet, useLocation } from 'react-router-dom';
-import { CircleDot, Home, ListTodo, PieChart, Plus, Target, type LucideIcon } from 'lucide-react';
+import { ChartNoAxesColumn, CircleDot, Home, ListTodo, Plus, Target, type LucideIcon } from 'lucide-react';
 import { useAuth } from '@/features/auth/AuthContext';
 import { cn } from '@/shared/ui';
 
@@ -45,7 +45,7 @@ export function BottomNav() {
       >
         <Plus size={26} strokeWidth={2.4} aria-hidden="true" />
       </NavLink>
-      <NavItem to="/presupuestos" label="Presupuestos" icon={PieChart} />
+      <NavItem to="/reportes" label="Reportes" icon={ChartNoAxesColumn} />
       <NavItem to="/metas" label="Metas" icon={Target} />
     </nav>
   );

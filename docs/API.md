@@ -146,9 +146,13 @@ Contribution = {"id": "uuid", "goal_id": "uuid", "amount": "250000.00", "date": 
   "accounts": [Account],
   "budgets_at_risk": [BudgetStatus],
   "upcoming_recurring": [UpcomingItem],
-  "recent_transactions": [Transaction]
+  "recent_transactions": [Transaction],
+  "current_pay_period": PayPeriod | null,
+  "previous_pay_period": PayPeriod | null,
+  "next_payday": {"date": "2026-10-30", "amount": "1000000.00", "note": "Sueldo"} | null
 }
 ```
+- `current_pay_period` / `previous_pay_period`: quincena de pago que contiene **hoy** y la anterior (ver "Quincenas de pago"); no dependen de `from`/`to`. `next_payday`: siguiente fecha de pago efectiva > hoy (suma de montos si varias reglas de sueldo caen el mismo día; `note` de la primera); null si no hay sueldo marcado.
 - `by_category`: solo gastos del periodo, ordenado desc, `percent` sobre el total de gastos.
 - `monthly_trend`: últimos 6 meses terminando en el mes de `to` (meses sin datos con `"0.00"`).
 - `budgets_at_risk`: presupuestos del mes de `to` con status `warning` o `exceeded`.
@@ -158,6 +162,32 @@ Contribution = {"id": "uuid", "goal_id": "uuid", "amount": "250000.00", "date": 
 ## Reportes
 `GET /reports/by-category?from&to&type=expense|income` → `[{category_id, name, color, icon, total, percent, count}]`
 `GET /reports/monthly-trend?months=12` → `[{month, income, expense, net}]`
+
+### Quincenas de pago
+`GET /reports/pay-periods?count=6` → `PayPeriod[]` (1–24, defecto 6), de la **más reciente a la más antigua**; la primera es la que contiene hoy (`in_progress = true`).
+
+```json
+PayPeriod = {
+  "start": "2026-10-15", "end": "2026-10-29", "days": 15, "days_elapsed": 6, "days_remaining": 10,
+  "in_progress": true, "source": "paycheck|calendar",
+  "income": "1350000.00", "expense": "612400.00", "net": "737600.00",
+  "spent_per_day": "102066.67",
+  "available_per_day": "73760.00",
+  "spent_percent": 45.4, "time_percent": 40.0,
+  "status": "en_curso|ahorro|justo|deficit",
+  "by_category": [{"category_id": "uuid", "name": "Comida", "color": "#f97316", "icon": "utensils", "total": "210000.00", "percent": 34.3}]
+}
+```
+**Definición de periodo**
+- Fechas de pago = unión (sin duplicados) de las fechas **efectivas** de todas las reglas recurrentes activas con `is_paycheck = true`, calculadas desde su calendario (desde `start_date`, respetando `end_date`), no desde los movimientos. Así los periodos no cambian si un pago se registró tarde o a mano.
+- Un periodo va de una fecha de pago hasta el día anterior a la siguiente (`end = siguiente_pago − 1 día`). Ej.: pagos 15 oct y 30 oct → periodo 15–29 oct. Antes del primer pago de la primera regla no hay periodos de sueldo.
+- Sin reglas de sueldo (o antes del primer pago) → **respaldo de calendario** (`source = "calendar"`): 1–15 y 16–fin de mes.
+- `income` / `expense`: movimientos con `date` en `[start, end]`; las transferencias no cuentan. `net = income − expense`.
+- `days_elapsed` = días desde `start` hasta hoy inclusive (solo en curso; si no, = `days`). `days_remaining` = `days − days_elapsed` + 1 si en curso (incluye hoy), 0 si cerrado.
+- `spent_per_day` = `expense / days_elapsed`. `available_per_day` (solo en curso, si no null) = `max(net, 0) / days_remaining`.
+- `spent_percent` = expense/income×100 (0 si income = 0); `time_percent` = days_elapsed/days×100. Ambos con 1 decimal.
+- `status`: en curso → `en_curso`; `net < 0` → `deficit`; `income = 0` o `net < 10 % de income` → `justo`; si no → `ahorro`. Si una regla de sueldo terminó (`end_date`) y no hay pago siguiente, el periodo en curso cierra el 15 o el fin de mes, lo que llegue primero.
+- `by_category`: gastos del periodo agrupados (igual que en dashboard).
 
 ## Exportar
 `GET /export/csv?from&to` → `text/csv; charset=utf-8` con BOM, separador `,`, columnas:

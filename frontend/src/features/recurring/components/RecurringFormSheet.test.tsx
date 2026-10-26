@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { addDays, todayISO } from '@/shared/lib/dates';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RecurringFormSheet } from './RecurringFormSheet';
@@ -122,5 +123,17 @@ describe('RecurringFormSheet', () => {
     expect(screen.getByRole('switch', { name: /Es mi sueldo/ })).toHaveAttribute('aria-checked', 'true');
     expect(screen.getByText(/≈ \$ 2\.000\.000 al mes/)).toBeInTheDocument();
     expect(screen.getAllByText('cae fin de semana → se adelanta').length).toBeGreaterThan(0);
+  });
+
+  it('al crear con inicio en el pasado avisa los pagos que se registrarán y permite empezar desde el próximo', async () => {
+    const user = setup();
+    const today = todayISO('America/Bogota');
+    await user.click(screen.getByRole('button', { name: 'Quincenal · 15 y último' }));
+    fireEvent.change(screen.getByLabelText('Inicia'), { target: { value: addDays(today, -70) } });
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent(/Al guardar se registrarán \d+ pagos anteriores/);
+    await user.click(screen.getByRole('button', { name: /Empezar desde el próximo pago/ }));
+    expect((screen.getByLabelText('Inicia') as HTMLInputElement).value > today).toBe(true);
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 });

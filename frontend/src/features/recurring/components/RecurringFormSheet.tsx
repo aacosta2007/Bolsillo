@@ -3,7 +3,7 @@ import { Info } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { todayISO, weekdayDate } from '@/shared/lib/dates';
+import { addDays, todayISO, weekdayDate } from '@/shared/lib/dates';
 import { amountToDigits, formatMoney, fromCents, parseUserAmount, toCents } from '@/shared/lib/money';
 import { positiveAmount } from '@/shared/lib/schemas';
 import { Button, Chip, ConfirmSheet, Field, FormError, Input, Segmented, Select, Sheet, Switch, cn, errorMessage } from '@/shared/ui';
@@ -142,6 +142,21 @@ export function RecurringFormSheet({ open, onOpenChange, rule }: { open: boolean
     rule ? today : undefined,
   );
   const accountName = (accounts.data ?? []).find((a) => a.id === wAccount)?.name ?? '';
+  // Al crear con inicio en el pasado el API registra todas las ocurrencias ya vencidas: se avisa para evitar duplicados.
+  const pastOccurrences =
+    !rule && wStart < today
+      ? upcomingOccurrences(
+          { ...schedule, interval: intervalN, weekend_adjust: weekend ? 'previous_business_day' : 'none', start_date: wStart, end_date: wEnd || null },
+          400,
+        ).filter((o) => o.date <= today)
+      : [];
+  const nextFromToday = pastOccurrences.length
+    ? upcomingOccurrences(
+        { ...schedule, interval: intervalN, weekend_adjust: weekend ? 'previous_business_day' : 'none', start_date: wStart, end_date: wEnd || null },
+        1,
+        addDays(today, 1),
+      )[0]
+    : undefined;
 
   const onSubmit = handleSubmit((v) => {
     if (mode === 'custom' && customDays.length === 0) {
@@ -268,6 +283,23 @@ export function RecurringFormSheet({ open, onOpenChange, rule }: { open: boolean
             </Field>
             <Field label="Termina (opcional)">{(p) => <Input {...p} type="date" {...register('end_date')} />}</Field>
           </div>
+
+          {pastOccurrences.length > 0 && (
+            <div role="alert" className="flex flex-col gap-2 rounded-[14px] border border-[#F5D3AE] bg-[#FFF4E8] px-3.5 py-3 text-[13px] text-[#7A2A08]">
+              <p>
+                <strong>
+                  Al guardar se registrarán {pastOccurrences.length} {pastOccurrences.length === 1 ? 'pago anterior' : 'pagos anteriores'}
+                </strong>{' '}
+                ({pastOccurrences.slice(-3).map((o) => weekdayDate(o.date)).join(', ')}
+                {pastOccurrences.length > 3 ? ' y otros' : ''}). Si ya los anotaste a mano, quedarían duplicados.
+              </p>
+              {nextFromToday && (
+                <Button type="button" variant="secondary" onClick={() => setValue('start_date', nextFromToday.nominal)}>
+                  Empezar desde el próximo pago ({weekdayDate(nextFromToday.date)})
+                </Button>
+              )}
+            </div>
+          )}
 
           <section aria-label="Próximos pagos" className="flex flex-col gap-1.5 rounded-[14px] border border-line px-3.5 py-3">
             <h3 className="text-xs font-semibold text-muted">Próximos pagos</h3>
