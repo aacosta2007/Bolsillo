@@ -50,6 +50,7 @@ _PERIOD_CHIP = {
     PeriodStatus.TIGHT: ("justo", "#FFF0DC", "#8A4A0F"),
     PeriodStatus.IN_PROGRESS: ("en curso", "#E4ECFD", "#1E3A8A"),
     PeriodStatus.DEFICIT: ("déficit", "#FDE3D6", "#8A2C07"),
+    PeriodStatus.CALENDAR: ("calendario", "#EEF1EE", "#55615B"),
 }
 _HEX = set("0123456789abcdefABCDEF")
 NBSP = " "
@@ -166,9 +167,15 @@ def _period_card(p: PayPeriod) -> dict:
         net, net_color = (f"{'Lleva' if p.in_progress else 'Sobraron'} {format_cop(p.net)}", "#0F5E55")
     else:
         net, net_color = (f"{'Va en déficit por' if p.in_progress else 'Faltaron'} {format_cop(-p.net)}", "#B33A0A")
+    if p.extra_income > 0:
+        received = [("Sueldo", format_cop(p.salary_income)), ("Extra", format_cop(p.extra_income))]
+    else:
+        received = [("Recibido", format_cop(p.income))]
     return {
         "label": _span_label(p.start, p.end), "status": label, "chip_bg": bg, "chip_fg": fg,
-        "income": format_cop(p.income), "expense": format_cop(p.expense), "per_day": format_cop(p.spent_per_day),
+        "received": received,
+        "income": format_cop(p.income), "expense": format_cop(p.expense),
+        "per_day": format_cop(p.spent_per_day) if p.expense > 0 else "Sin gastos",
         "used": f"{min(100.0, ratio):.1f}", "bar": bar, "net": net, "net_color": net_color,
     }
 

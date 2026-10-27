@@ -18,17 +18,46 @@ describe('PayPeriodCard', () => {
     expect(screen.getByText(/hasta tu próximo pago \(vie 30 oct\)/)).toBeInTheDocument();
     expect(screen.getByText('Gastado 45 %')).toBeInTheDocument();
     expect(screen.getByText('Tiempo transcurrido 40 %')).toBeInTheDocument();
+    expect(screen.getByText('Sueldo')).toBeInTheDocument();
     expect(screen.getByText('$ 1.350.000')).toBeInTheDocument();
     expect(screen.getByText('$ 612.400')).toBeInTheDocument();
+    expect(screen.queryByText('Extra')).not.toBeInTheDocument();
+    expect(screen.queryByText('Recibido')).not.toBeInTheDocument();
     expect(screen.getByRole('progressbar')).toHaveStyle({ width: '45.4%' });
     expect(screen.getByTestId('time-marker')).toHaveStyle({ left: '40%' });
     expect(screen.queryByText(/Marca tu sueldo/)).not.toBeInTheDocument();
   });
 
+  it('muestra sueldo y extra por separado (caso real: 930.000 + 200.000)', () => {
+    wrap(
+      <PayPeriodCard
+        period={makePeriod({
+          start: '2026-10-15', end: '2026-10-30', days: 16, days_elapsed: 12, days_remaining: 5,
+          income: '1130000.00', salary_income: '930000.00', extra_income: '200000.00',
+          expense: '1005900.00', net: '124100.00', available_per_day: '24820.00',
+        })}
+        nextPayday={{ date: '2026-10-31', amount: '930000.00', note: 'Sueldo' }}
+      />,
+    );
+    expect(screen.getByText('Sueldo')).toBeInTheDocument();
+    expect(screen.getByText('$ 930.000')).toBeInTheDocument();
+    expect(screen.getByText('Extra')).toBeInTheDocument();
+    expect(screen.getByText('$ 200.000')).toBeInTheDocument();
+    expect(screen.getByText('Gastado')).toBeInTheDocument();
+    expect(screen.getByText('$ 124.100')).toBeInTheDocument();
+    expect(screen.queryByText('Recibido')).not.toBeInTheDocument();
+    expect(screen.queryByText(/Aún no hay un sueldo/)).not.toBeInTheDocument();
+  });
+
   it('con source calendar muestra "Quincena" y el enlace a recurrentes', () => {
     wrap(<PayPeriodCard period={makePeriod({ source: 'calendar', start: '2026-10-16', end: '2026-10-31' })} nextPayday={null} />);
-    expect(screen.getByText('Quincena 16 – 31 oct')).toBeInTheDocument();
-    const link = screen.getByRole('link', { name: 'Marca tu sueldo para medir de pago a pago' });
+    expect(screen.getByText('Quincena de calendario · 16 – 31 oct')).toBeInTheDocument();
+    expect(
+      screen.getByText(/Aún no hay un sueldo registrado en este periodo: los números incluyen cualquier ingreso/),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Recibido')).toBeInTheDocument();
+    expect(screen.queryByText('Sueldo')).not.toBeInTheDocument();
+    const link = screen.getByRole('link', { name: 'Marca tu sueldo en Metas → Recurrentes' });
     expect(link).toHaveAttribute('href', '/metas?tab=recurrentes');
   });
 
@@ -41,6 +70,7 @@ describe('PayPeriodCard', () => {
     );
     expect(screen.getByText('$ 0')).toBeInTheDocument();
     expect(screen.getByText('$ 0 por día')).toBeInTheDocument();
+    expect(screen.getByText('Gastaste $ 120.000 más de lo que recibiste')).toBeInTheDocument();
     expect(screen.getByRole('progressbar')).toHaveStyle({ width: '100%' });
   });
 });

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 import { PayPeriodsList, formatNet } from './PayPeriodsList';
 import { makePeriod } from '../fixtures';
+import { payPeriodHighlights } from '../summary';
 
 describe('formatNet', () => {
   it('signos', () => {
@@ -34,7 +35,43 @@ describe('PayPeriodsList', () => {
     expect(within(rows[1]!).getByText('justo')).toBeInTheDocument();
     expect(within(rows[2]!).getByText('− $ 80.000')).toBeInTheDocument();
     expect(within(rows[2]!).getByText('déficit')).toBeInTheDocument();
+    expect(within(rows[2]!).getByText('Gastaste $ 80.000 más de lo que recibiste')).toBeInTheDocument();
+    expect(within(rows[0]!).queryByText(/más de lo que recibiste/)).not.toBeInTheDocument();
     expect(within(rows[2]!).getByText(/17 días/)).toBeInTheDocument();
     expect(within(rows[3]!).getByText('ahorro')).toBeInTheDocument();
+  });
+});
+
+describe('PayPeriodsList: sueldo, extra, sin gastos y calendario', () => {
+  it('desglosa sueldo y extra, dice "Sin gastos" y muestra el chip calendario neutro', () => {
+    render(
+      <PayPeriodsList
+        periods={[
+          makePeriod({ income: '1130000.00', salary_income: '930000.00', extra_income: '200000.00' }),
+          makePeriod({
+            start: '2026-10-01', end: '2026-10-14', source: 'calendar', status: 'calendario', in_progress: false,
+            days: 14, days_elapsed: 14, days_remaining: 0, income: '0.00', salary_income: '0.00', extra_income: '0.00',
+            expense: '0.00', net: '0.00', spent_per_day: '0.00', available_per_day: null,
+          }),
+        ]}
+      />,
+    );
+    const rows = screen.getAllByRole('listitem');
+    expect(within(rows[0]!).getByText('Sueldo $ 930.000 · Extra $ 200.000')).toBeInTheDocument();
+    const cal = within(rows[1]!);
+    expect(cal.getByText('calendario')).toHaveClass('bg-[#EEF1EE]');
+    expect(cal.getByText('14 días · Sin gastos')).toBeInTheDocument();
+    expect(cal.queryByText(/por día|\/día/)).not.toBeInTheDocument();
+    expect(cal.queryByText('déficit')).not.toBeInTheDocument();
+  });
+
+  it('el resumen ignora los periodos de calendario', () => {
+    const calendarBest = makePeriod({
+      start: '2026-10-01', end: '2026-10-14', source: 'calendar', status: 'calendario', in_progress: false,
+      net: '900000.00',
+    });
+    const paycheck = makePeriod({ start: '2026-09-15', end: '2026-09-29', in_progress: false, net: '100000.00', status: 'justo' });
+    expect(payPeriodHighlights([makePeriod(), calendarBest, paycheck]).best).toBe(paycheck);
+    expect(payPeriodHighlights([makePeriod(), calendarBest])).toEqual({ best: null, deficit: null, longest: null });
   });
 });

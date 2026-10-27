@@ -67,7 +67,8 @@
         <div class="period">
           <div class="top"><span class="lab">{{ p.label }}</span><span class="chipcell"><span class="chip" style="background: {{ p.chip_bg }}; color: {{ p.chip_fg }}">{{ p.status }}</span></span></div>
           <div class="rows">
-            <div><span class="k">Recibido</span><span class="v">{{ p.income }}</span></div>
+            {% for k, v in p.received %}<div><span class="k">{{ k }}</span><span class="v">{{ v }}</span></div>
+            {% endfor %}
             <div><span class="k">Gastado</span><span class="v">{{ p.expense }}</span></div>
             <div><span class="k">Por día</span><span class="v">{{ p.per_day }}</span></div>
           </div>

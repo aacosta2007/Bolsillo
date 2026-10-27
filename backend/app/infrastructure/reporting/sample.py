@@ -66,7 +66,7 @@ def sample_report() -> MonthlyReport:
         (PeriodSpan(start=date(2026, 10, 15), end=date(2026, 10, 29), source=PeriodSource.PAYCHECK), 1350000, 1102200),
         (PeriodSpan(start=date(2026, 10, 30), end=date(2026, 11, 14), source=PeriodSource.PAYCHECK), 1000000, 98000),
     ]
-    periods = [period_metrics(s, today, D(i), D(e)) for s, i, e in spans]
+    periods = [period_metrics(s, today, D(i), D(e), D(1000000)) for s, i, e in spans]
 
     budgets = []
     for name, spent, limit in (

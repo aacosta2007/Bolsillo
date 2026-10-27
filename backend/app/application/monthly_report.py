@@ -22,7 +22,7 @@ from app.domain.monthly_report import (
     savings_rate,
     summarize_budgets,
 )
-from app.domain.pay_periods import PayPeriod, build_spans, paydays
+from app.domain.pay_periods import PayPeriod, build_spans
 from app.domain.repositories import UnitOfWork
 from app.domain.rules import add_months, first_of_month, goal_percent, last_of_month, monthly_needed
 
@@ -104,7 +104,7 @@ class MonthlyReportService:
     ) -> list[PayPeriod]:
         """Quincenas de pago que se cruzan con el mes, en orden cronológico."""
         reference = today if is_partial else month_end
-        pay_dates = [p.date for p in paydays(await self.uow.recurring.list(user_id), today)]
+        pay_dates, _ = await self.reports.pay_dates(user_id, today)
         count = 8
         while True:
             spans = build_spans(pay_dates, reference, count)

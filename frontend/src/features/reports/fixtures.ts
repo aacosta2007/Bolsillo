@@ -10,6 +10,8 @@ export function makePeriod(over: Partial<PayPeriod> = {}): PayPeriod {
     in_progress: true,
     source: 'paycheck',
     income: '1350000.00',
+    salary_income: '1350000.00',
+    extra_income: '0.00',
     expense: '612400.00',
     net: '737600.00',
     spent_per_day: '102066.67',

@@ -1,7 +1,7 @@
 import type { BudgetStatus } from '../budgets/types';
 import type { CategoryTotal } from '../dashboard/types';
 
-export type PayPeriodStatus = 'en_curso' | 'ahorro' | 'justo' | 'deficit';
+export type PayPeriodStatus = 'en_curso' | 'ahorro' | 'justo' | 'deficit' | 'calendario';
 
 export interface PayPeriod {
   start: string;
@@ -12,6 +12,10 @@ export interface PayPeriod {
   in_progress: boolean;
   source: 'paycheck' | 'calendar';
   income: string;
+  /** Parte del ingreso que es sueldo. */
+  salary_income: string;
+  /** Ingreso que no es sueldo (income − salary_income). */
+  extra_income: string;
   expense: string;
   net: string;
   spent_per_day: string | null;
