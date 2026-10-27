@@ -10,6 +10,7 @@ from app.domain.entities import (
     Account,
     Budget,
     Category,
+    CategoryTotal,
     Contribution,
     Goal,
     Notification,
@@ -96,6 +97,9 @@ class FakeCategories(_Repo):
 
 
 class FakeTransactions(_Repo):
+    categories: "FakeCategories"
+    recurring: "FakeRecurring"
+
     async def spent_by_category(self, user_id, start: date, end: date):
         out: dict[UUID, Decimal] = {}
         for t in self._all(user_id):
@@ -113,6 +117,37 @@ class FakeTransactions(_Repo):
 
     def all(self) -> list[Transaction]:
         return list(self.items.values())
+
+    # ---- agregaciones usadas por los reportes (misma semántica que el repositorio SQL) ----
+    async def totals(self, user_id, start: date, end: date):
+        inc = sum((t.amount for t in self._all(user_id) if t.type.value == "income" and start <= t.date <= end), Decimal(0))
+        exp = sum((t.amount for t in self._all(user_id) if t.type.value == "expense" and start <= t.date <= end), Decimal(0))
+        return inc, exp
+
+    async def category_totals(self, user_id, start: date, end: date, type):
+        out: dict[UUID, list] = {}
+        for t in self._all(user_id):
+            if t.type == type and start <= t.date <= end:
+                out.setdefault(t.category_id, []).append(t.amount)
+        cats = {c.id: c for c in await self.categories.list(user_id, None)}
+        rows = [
+            CategoryTotal(category_id=cid, name=cats[cid].name, color=cats[cid].color, icon=cats[cid].icon,
+                          total=sum(v, Decimal(0)), count=len(v))
+            for cid, v in out.items()
+        ]
+        return sorted(rows, key=lambda r: -r.total)
+
+    def _is_salary(self, user_id, t) -> bool:
+        if t.type.value != "income":
+            return False
+        rules = [r for r in self.recurring._all(user_id) if r.is_paycheck]
+        return t.recurring_id in {r.id for r in rules} or t.category_id in {r.category_id for r in rules if r.active}
+
+    async def salary_total(self, user_id, start: date, end: date):
+        return sum((t.amount for t in self._all(user_id) if self._is_salary(user_id, t) and start <= t.date <= end), Decimal(0))
+
+    async def salary_dates(self, user_id, until: date):
+        return sorted({t.date for t in self._all(user_id) if self._is_salary(user_id, t) and t.date <= until})
 
 
 class FakeBudgets(_Repo):
@@ -251,6 +286,8 @@ class FakeUoW:
         self.notifications = FakeNotifications()
         self.push_subscriptions = FakePushSubscriptions()
         self.commits = 0
+        self.transactions.categories = self.categories
+        self.transactions.recurring = self.recurring
 
     async def commit(self):
         self.commits += 1

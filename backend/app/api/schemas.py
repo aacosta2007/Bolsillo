@@ -420,13 +420,15 @@ class PayPeriodOut(ORM):
     in_progress: bool
     source: Literal["paycheck", "calendar"]
     income: Money
+    salary_income: Money
+    extra_income: Money
     expense: Money
     net: Money
     spent_per_day: Money
     available_per_day: Money | None
     spent_percent: float
     time_percent: float
-    status: Literal["en_curso", "ahorro", "justo", "deficit"]
+    status: Literal["en_curso", "ahorro", "justo", "deficit", "calendario"]
     by_category: list[CategoryReportOut]
 
 

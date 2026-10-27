@@ -25,6 +25,7 @@ from app.domain.pay_periods import (
     Payday,
     PeriodSpan,
     build_spans,
+    merge_pay_dates,
     paydays,
     period_metrics,
 )
@@ -135,16 +136,27 @@ class ReportService:
     async def _period(self, user_id: UUID, span: PeriodSpan, today: date) -> PayPeriod:
         tx = self.uow.transactions
         income, expense = await tx.totals(user_id, span.start, span.end)  # sin transferencias
-        period = period_metrics(span, today, income, expense)
+        salary = await tx.salary_total(user_id, span.start, span.end)
+        period = period_metrics(span, today, income, expense, salary)
         period.by_category = _percent_rows(
             await tx.category_totals(user_id, span.start, span.end, TransactionType.EXPENSE)
         )
         return period
 
+    async def pay_dates(self, user_id: UUID, today: date) -> tuple[list[date], list[Payday]]:
+        """(fechas de pago, próximos pagos de las reglas).
+
+        Fechas = sueldos reales ya registrados (<= hoy) + fechas efectivas futuras del calendario de
+        las reglas de sueldo (> hoy), sin duplicados y fusionando las que quedan a 3 días o menos."""
+        rule_paydays = paydays(await self.uow.recurring.list(user_id), today)
+        real = await self.uow.transactions.salary_dates(user_id, today)
+        dates = merge_pay_dates(real, [p.date for p in rule_paydays], today)
+        return dates, [p for p in rule_paydays if p.date > today]
+
     async def pay_periods(self, user_id: UUID, count: int) -> list[PayPeriod]:
         """Quincenas de pago de la más reciente (la que contiene hoy) a la más antigua."""
         today = await self._today(user_id)
-        pay_dates = [p.date for p in paydays(await self.uow.recurring.list(user_id), today)]
+        pay_dates, _ = await self.pay_dates(user_id, today)
         return [await self._period(user_id, s, today) for s in build_spans(pay_dates, today, count)]
 
     async def dashboard(self, user_id: UUID, start: date | None, end: date | None) -> Dashboard:
@@ -158,8 +170,8 @@ class ReportService:
         income, expense = await tx.totals(user_id, start, end)
         budgets = await BudgetService(self.uow).list(user_id, first_of_month(end))
         upcoming = await RecurringService(self.uow).upcoming(user_id, 7, today)
-        paydays_ = paydays(await self.uow.recurring.list(user_id), today)
-        spans = build_spans([p.date for p in paydays_], today, 2)
+        pay_dates, upcoming_paydays = await self.pay_dates(user_id, today)
+        spans = build_spans(pay_dates, today, 2)
         return Dashboard(
             period_from=start,
             period_to=end,
@@ -178,7 +190,7 @@ class ReportService:
             recent_transactions=await tx.recent(user_id, 5),
             current_pay_period=await self._period(user_id, spans[0], today),
             previous_pay_period=await self._period(user_id, spans[1], today),
-            next_payday=next((p for p in paydays_ if p.date > today), None),
+            next_payday=upcoming_paydays[0] if upcoming_paydays else None,
         )
 
     async def export_csv(self, user_id: UUID, start: date | None, end: date | None) -> tuple[str, date, date]:

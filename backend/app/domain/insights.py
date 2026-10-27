@@ -23,6 +23,7 @@ from app.domain.formatting import (
 )
 from app.domain.monthly_report import Insight, InsightKind, MonthlyReport, Tone
 from app.domain.enums import BudgetState
+from app.domain.pay_periods import PeriodSource
 from app.domain.rules import add_months
 
 MIN_CHANGE_PCT = 10.0  # una categoría solo es noticia si cambió >= 10 %...
@@ -133,7 +134,8 @@ def _budgets_exceeded(r: MonthlyReport) -> list[_Scored]:
 
 
 def _pay_periods(r: MonthlyReport) -> list[_Scored]:
-    closed = [p for p in r.pay_periods if not p.in_progress]
+    # los periodos de calendario no se juzgan: no se sabe cuál es el sueldo
+    closed = [p for p in r.pay_periods if not p.in_progress and p.source == PeriodSource.PAYCHECK]
     out: list[_Scored] = []
     deficits = [p for p in closed if p.net < 0]
     if deficits:

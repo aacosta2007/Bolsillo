@@ -241,6 +241,32 @@ class SqlTransactionRepository(SqlRepo[Transaction]):
         row = (await self.session.execute(stmt)).one()
         return _dec(row[0]), _dec(row[1])
 
+    @staticmethod
+    def _salary_filter(user_id: UUID):
+        """Ingreso de sueldo: de una regla is_paycheck, o en la categoría de una regla de sueldo activa."""
+        R = RecurringRuleModel
+        paycheck_rules = select(R.id).where(R.user_id == user_id, R.is_paycheck.is_(True))
+        paycheck_categories = select(R.category_id).where(
+            R.user_id == user_id, R.is_paycheck.is_(True), R.active.is_(True)
+        )
+        return and_(
+            T.user_id == user_id,
+            T.type == "income",
+            or_(T.recurring_id.in_(paycheck_rules), T.category_id.in_(paycheck_categories)),
+        )
+
+    async def salary_total(self, user_id: UUID, start: date, end: date) -> Decimal:
+        stmt = select(func.coalesce(func.sum(T.amount), 0)).where(
+            self._salary_filter(user_id), T.date >= start, T.date <= end
+        )
+        return _dec((await self.session.execute(stmt)).scalar_one())
+
+    async def salary_dates(self, user_id: UUID, until: date) -> list[date]:
+        stmt = (
+            select(T.date).where(self._salary_filter(user_id), T.date <= until).distinct().order_by(T.date)
+        )
+        return list((await self.session.scalars(stmt)).all())
+
     async def category_totals(
         self, user_id: UUID, start: date, end: date, type: TransactionType
     ) -> list[CategoryTotal]:

@@ -3,6 +3,8 @@ import type { BudgetStatus } from '@/features/budgets/types';
 import { daysBetween, rangeLabel, shortDate } from '@/shared/lib/dates';
 import { formatMoney, formatMoneyWhole, toCents } from '@/shared/lib/money';
 import { Card, CardHeader, ProgressBar, StatusChip, cn } from '@/shared/ui';
+import { netHeadline, perDayText, receivedText } from '../periodText';
+import { PeriodStatusChip } from './PayPeriodsList';
 import { describeChange, describePoints, TONE_CLASS, type Change } from '../monthly';
 import type { MonthlyCategory, MonthlyDay, MonthlyGoal, MonthlyGoalStatus, MonthlyReport, PayPeriod } from '../types';
 
@@ -233,17 +235,18 @@ export function DailySpending({ report }: { report: MonthlyReport }) {
 // ---------- Quincenas del mes ----------
 function PeriodCard({ p }: { p: PayPeriod }) {
   const net = toCents(p.net);
-  const headline = p.in_progress
-    ? `Disponible ${formatMoney(p.net)}`
-    : net >= 0n
-      ? `Sobraron ${formatMoney(p.net)}`
-      : `Faltaron ${formatMoney(p.net.replace('-', ''))}`;
+  const headline = netHeadline(p);
+  const perDay = perDayText(p);
   const meta = `${rangeLabel(p.start, p.end)} · ${p.in_progress ? 'en curso' : `${p.days || daysBetween(p.start, p.end) + 1} días`}`;
   return (
     <li className="flex flex-col gap-1 rounded-[14px] border border-line p-3">
-      <span className="text-xs text-muted">{meta}</span>
+      <span className="flex items-center justify-between gap-2">
+        <span className="text-xs text-muted">{meta}</span>
+        {p.status === 'calendario' && <PeriodStatusChip status={p.status} />}
+      </span>
       <span className={cn('text-[15px] font-bold', net < 0n && 'text-expense')}>{headline}</span>
-      {p.spent_per_day && <span className="text-xs text-muted">{formatMoneyWhole(p.spent_per_day)} por día</span>}
+      <span className="text-xs text-muted">{receivedText(p)}</span>
+      {perDay && <span className="text-xs text-muted">{perDay}</span>}
     </li>
   );
 }

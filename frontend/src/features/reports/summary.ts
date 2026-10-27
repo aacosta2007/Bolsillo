@@ -10,9 +10,10 @@ export interface PayPeriodsHighlights {
   longest: PayPeriod | null;
 }
 
-/** Calcula, sobre periodos cerrados, la mejor quincena y la más larga o en déficit. En empate gana la más reciente. */
+/** Calcula, sobre periodos cerrados de sueldo (ignora los de calendario), la mejor quincena y la más larga o en déficit. En empate gana la más reciente. */
 export function payPeriodHighlights(periods: PayPeriod[]): PayPeriodsHighlights {
-  const closed = periods.filter((p) => !p.in_progress);
+  // Los periodos de calendario no se juzgan: no se sabe cuál es el sueldo.
+  const closed = periods.filter((p) => !p.in_progress && p.source === 'paycheck');
   let best: PayPeriod | null = null;
   let deficit: PayPeriod | null = null;
   for (const p of closed) {

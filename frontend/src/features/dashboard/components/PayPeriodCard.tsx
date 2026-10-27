@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { TrendingUp } from 'lucide-react';
 import { rangeLabel, weekdayDate } from '@/shared/lib/dates';
 import { formatMoney, formatMoneyWhole, formatPercent, toCents } from '@/shared/lib/money';
+import { cn } from '@/shared/ui';
 import type { PayPeriod } from '../../reports/types';
 import type { NextPayday } from '../types';
 
@@ -15,11 +16,12 @@ export function PayPeriodCard({ period, nextPayday }: { period: PayPeriod; nextP
   const available = netCents > 0n ? period.net : '0';
   const perDay = netCents > 0n && period.available_per_day ? period.available_per_day : '0';
   const range = rangeLabel(period.start, period.end);
+  const hasExtra = !isCalendar && toCents(period.extra_income) > 0n;
 
   return (
     <section aria-label="Esta quincena" className="flex flex-col gap-3.5 rounded-xl2 bg-primary p-5 text-white">
       <div className="flex items-center justify-between gap-2">
-        <span className="text-[13px] text-[#CFE6E1]">{isCalendar ? `Quincena ${range}` : `Esta quincena · ${range}`}</span>
+        <span className="text-[13px] text-[#CFE6E1]">{isCalendar ? `Quincena de calendario · ${range}` : `Esta quincena · ${range}`}</span>
         <span className="rounded-full bg-white/[0.16] px-2.5 py-1 text-xs font-bold">
           Día {period.days_elapsed} de {period.days}
         </span>
@@ -60,18 +62,31 @@ export function PayPeriodCard({ period, nextPayday }: { period: PayPeriod; nextP
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-2">
-        <Stat label="Recibido" value={formatMoney(period.income)} />
+      {netCents < 0n && (
+        <span className="text-[13px] font-semibold text-[#FFD9B8]">
+          Gastaste {formatMoney(period.net.replace('-', ''))} más de lo que recibiste
+        </span>
+      )}
+
+      <div className={cn('grid gap-2', hasExtra ? 'grid-cols-3' : 'grid-cols-2')}>
+        {isCalendar ? (
+          <Stat label="Recibido" value={formatMoney(period.income)} />
+        ) : (
+          <>
+            <Stat label="Sueldo" value={formatMoney(period.salary_income)} />
+            {hasExtra && <Stat label="Extra" value={formatMoney(period.extra_income)} />}
+          </>
+        )}
         <Stat label="Gastado" value={formatMoney(period.expense)} />
       </div>
 
       {isCalendar && (
-        <Link
-          to="/metas?tab=recurrentes"
-          className="-my-1 flex min-h-[44px] items-center text-[13px] font-semibold text-[#CFE6E1] underline underline-offset-2"
-        >
-          Marca tu sueldo para medir de pago a pago
-        </Link>
+        <p role="note" className="rounded-ctl2 bg-white/[0.12] p-3 text-[13px] leading-[1.4] text-[#E6F2EF]">
+          Aún no hay un sueldo registrado en este periodo: los números incluyen cualquier ingreso.{' '}
+          <Link to="/metas?tab=recurrentes" className="font-semibold text-white underline underline-offset-2">
+            Marca tu sueldo en Metas → Recurrentes
+          </Link>
+        </p>
       )}
     </section>
   );

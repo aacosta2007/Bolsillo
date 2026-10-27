@@ -5,10 +5,12 @@ from dataclasses import dataclass, field
 from datetime import date, timedelta
 from decimal import Decimal
 from enum import Enum
+from typing import Iterable
 
 from app.domain.entities import RecurringRule
 from app.domain.rules import effective_date, first_nominal_on_or_after, last_of_month, next_nominal_after, q2
 
+MIN_PAYDAY_GAP_DAYS = 3  # dos fechas de pago a 3 días o menos se fusionan (se conserva la primera)
 MAX_RULE_OCCURRENCES = 5000  # tope de seguridad por regla (p. ej. una diaria con años de historia)
 SAVINGS_MARGIN = Decimal("0.10")  # net < 10 % del ingreso -> "justo"
 
@@ -23,6 +25,7 @@ class PeriodStatus(str, Enum):
     SAVING = "ahorro"
     TIGHT = "justo"
     DEFICIT = "deficit"
+    CALENDAR = "calendario"  # periodo cerrado de respaldo: sin juicio, no se sabe cuánto es el sueldo
 
 
 @dataclass(kw_only=True)
@@ -49,6 +52,8 @@ class PayPeriod:
     in_progress: bool
     source: PeriodSource
     income: Decimal
+    salary_income: Decimal
+    extra_income: Decimal
     expense: Decimal
     net: Decimal
     spent_per_day: Decimal
@@ -86,6 +91,19 @@ def paydays(rules: list[RecurringRule], today: date) -> list[Payday]:
                 rule.start_date, rule.frequency, rule.interval, rule.days_of_month, nominal
             )
     return [found[d] for d in sorted(found)]
+
+
+def merge_pay_dates(real_past: Iterable[date], rule_dates: Iterable[date], today: date) -> list[date]:
+    """Fechas de pago = sueldos reales pasados (<= hoy) + fechas de calendario futuras (> hoy).
+
+    Se unen sin duplicados y, si dos fechas quedan a 3 días o menos, se conserva solo la primera
+    (un ajuste o un bono no parten la quincena). Un pago programado pasado que no llegó no cuenta."""
+    candidates = sorted({d for d in real_past if d <= today} | {d for d in rule_dates if d > today})
+    merged: list[date] = []
+    for d in candidates:
+        if not merged or (d - merged[-1]).days > MIN_PAYDAY_GAP_DAYS:
+            merged.append(d)
+    return merged
 
 
 def calendar_span(d: date) -> PeriodSpan:
@@ -126,8 +144,13 @@ def build_spans(pay_dates: list[date], today: date, count: int) -> list[PeriodSp
     return spans
 
 
-def period_metrics(span: PeriodSpan, today: date, income: Decimal, expense: Decimal) -> PayPeriod:
-    """Métricas del periodo según el contrato (dinero con 2 decimales, porcentajes con 1)."""
+def period_metrics(
+    span: PeriodSpan, today: date, income: Decimal, expense: Decimal, salary_income: Decimal = Decimal(0)
+) -> PayPeriod:
+    """Métricas del periodo según el contrato (dinero con 2 decimales, porcentajes con 1).
+
+    `income` es el total de ingresos; `salary_income` la parte que es sueldo (el resto es extra)."""
+    salary_income = min(salary_income, income)
     days = (span.end - span.start).days + 1
     in_progress = span.start <= today <= span.end
     days_elapsed = (today - span.start).days + 1 if in_progress else days
@@ -135,6 +158,8 @@ def period_metrics(span: PeriodSpan, today: date, income: Decimal, expense: Deci
     net = income - expense
     if in_progress:
         status = PeriodStatus.IN_PROGRESS
+    elif span.source == PeriodSource.CALENDAR:
+        status = PeriodStatus.CALENDAR
     elif net < 0:
         status = PeriodStatus.DEFICIT
     elif income == 0 or net < income * SAVINGS_MARGIN:  # sin ingresos no hay ahorro que mostrar
@@ -150,6 +175,8 @@ def period_metrics(span: PeriodSpan, today: date, income: Decimal, expense: Deci
         in_progress=in_progress,
         source=span.source,
         income=q2(income),
+        salary_income=q2(salary_income),
+        extra_income=q2(income - salary_income),
         expense=q2(expense),
         net=q2(net),
         spent_per_day=q2(expense / days_elapsed),
