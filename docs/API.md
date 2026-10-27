@@ -170,23 +170,26 @@ Contribution = {"id": "uuid", "goal_id": "uuid", "amount": "250000.00", "date": 
 PayPeriod = {
   "start": "2026-10-15", "end": "2026-10-29", "days": 15, "days_elapsed": 6, "days_remaining": 10,
   "in_progress": true, "source": "paycheck|calendar",
-  "income": "1350000.00", "expense": "612400.00", "net": "737600.00",
+  "income": "1350000.00", "salary_income": "1000000.00", "extra_income": "350000.00",
+  "expense": "612400.00", "net": "737600.00",
   "spent_per_day": "102066.67",
   "available_per_day": "73760.00",
   "spent_percent": 45.4, "time_percent": 40.0,
-  "status": "en_curso|ahorro|justo|deficit",
+  "status": "en_curso|ahorro|justo|deficit|calendario",
   "by_category": [{"category_id": "uuid", "name": "Comida", "color": "#f97316", "icon": "utensils", "total": "210000.00", "percent": 34.3}]
 }
 ```
 **Definición de periodo**
-- Fechas de pago = unión (sin duplicados) de las fechas **efectivas** de todas las reglas recurrentes activas con `is_paycheck = true`, calculadas desde su calendario (desde `start_date`, respetando `end_date`), no desde los movimientos. Así los periodos no cambian si un pago se registró tarde o a mano.
+- **Ingreso de sueldo**: movimiento de ingreso generado por una regla con `is_paycheck = true` (`recurring_id`), **o** registrado a mano en la misma **categoría** que alguna regla de sueldo activa (p. ej. "Salario"). Las reglas de sueldo pueden empezar en el futuro: su categoría igual identifica los sueldos registrados a mano.
+- Fechas de pago = **pasadas** (≤ hoy): las fechas de los ingresos de sueldo reales; **futuras** (> hoy): las fechas **efectivas** del calendario de las reglas de sueldo activas (desde `start_date`, respetando `end_date`). Se unen sin duplicados y, si dos fechas quedan a 3 días o menos, se conserva solo la primera (un ajuste o un bono no parten la quincena). Un pago programado que nunca llegó no crea periodo.
+- `salary_income` = ingresos de sueldo del periodo; `extra_income` = `income − salary_income` (todo ingreso que no sea sueldo). `income`, `net` y las métricas usan el total.
 - Un periodo va de una fecha de pago hasta el día anterior a la siguiente (`end = siguiente_pago − 1 día`). Ej.: pagos 15 oct y 30 oct → periodo 15–29 oct. Antes del primer pago de la primera regla no hay periodos de sueldo.
-- Sin reglas de sueldo (o antes del primer pago) → **respaldo de calendario** (`source = "calendar"`): 1–15 y 16–fin de mes.
+- Sin reglas de sueldo (o antes del primer ingreso de sueldo) → **respaldo de calendario** (`source = "calendar"`): 1–15 y 16–fin de mes.
 - `income` / `expense`: movimientos con `date` en `[start, end]`; las transferencias no cuentan. `net = income − expense`.
 - `days_elapsed` = días desde `start` hasta hoy inclusive (solo en curso; si no, = `days`). `days_remaining` = `days − days_elapsed` + 1 si en curso (incluye hoy), 0 si cerrado.
 - `spent_per_day` = `expense / days_elapsed`. `available_per_day` (solo en curso, si no null) = `max(net, 0) / days_remaining`.
 - `spent_percent` = expense/income×100 (0 si income = 0); `time_percent` = days_elapsed/days×100. Ambos con 1 decimal.
-- `status`: en curso → `en_curso`; `net < 0` → `deficit`; `income = 0` o `net < 10 % de income` → `justo`; si no → `ahorro`. Si una regla de sueldo terminó (`end_date`) y no hay pago siguiente, el periodo en curso cierra el 15 o el fin de mes, lo que llegue primero.
+- `status`: en curso → `en_curso`; periodo cerrado con `source = "calendar"` → `calendario` (sin juicio: no se sabe cuánto es el sueldo); `net < 0` → `deficit`; `income = 0` o `net < 10 % de income` → `justo`; si no → `ahorro`. Si una regla de sueldo terminó (`end_date`) y no hay pago siguiente, el periodo en curso cierra el 15 o el fin de mes, lo que llegue primero.
 - `by_category`: gastos del periodo agrupados (igual que en dashboard).
 
 ### Reporte mensual
